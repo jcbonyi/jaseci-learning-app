@@ -157,6 +157,50 @@ export async function getNotes(userId) {
 }
 
 // ============================================
+// AI/LLM-Powered Generation (Jac byLLM walkers)
+// ============================================
+
+// Generate quiz questions using AI (calls Jac byLLM walker)
+export async function generateQuizWithAI(conceptName, numQuestions = 3) {
+    return await callWalker('generate_quiz_with_ai', {
+        concept_name: conceptName,
+        num_questions: numQuestions
+    });
+}
+
+// Generate lesson content using AI (calls Jac byLLM walker)
+export async function generateLessonWithAI(topic, difficulty = 1) {
+    return await callWalker('generate_lesson_with_ai', {
+        topic: topic,
+        difficulty: difficulty
+    });
+}
+
+// Generate a new concept using AI (calls Jac byLLM walker)
+export async function generateConceptWithAI(name, difficulty = 1) {
+    return await callWalker('generate_concept_with_ai', {
+        name: name,
+        difficulty: difficulty
+    });
+}
+
+// Get lesson with dynamic AI-generated content
+export async function getLessonDynamic(lessonTitle, useAI = true) {
+    return await callWalker('get_lesson_dynamic', {
+        lesson_title: lessonTitle,
+        use_ai: useAI
+    });
+}
+
+// Get concept with dynamic AI-generated content
+export async function getConceptDynamic(conceptName, useAI = true) {
+    return await callWalker('get_concept_dynamic', {
+        concept_name: conceptName,
+        use_ai: useAI
+    });
+}
+
+// ============================================
 // Utility functions
 // ============================================
 

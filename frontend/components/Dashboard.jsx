@@ -1,7 +1,7 @@
 import React, {useEffect, useState, useRef, useCallback} from 'react'
 import ConceptCard from './ConceptCard'
 import SkillMap from './SkillMap'
-import { getDashboard, recommendNext, updateMastery, generateQuiz, saveNote, getNotes } from '../api'
+import { getDashboard, recommendNext, updateMastery, generateQuiz, saveNote, getNotes, getConceptDynamic } from '../api'
 
 export default function Dashboard({userId, onConceptSelect, refreshKey}) {
     const [data, setData] = useState(null)
@@ -20,6 +20,11 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
     const [quizScore, setQuizScore] = useState(null)
     const [quizLoading, setQuizLoading] = useState(false)
     const saveTimeoutRef = useRef(null)
+    
+    // AI-generated dynamic content
+    const [dynamicConcept, setDynamicConcept] = useState(null)
+    const [loadingDynamic, setLoadingDynamic] = useState(false)
+    const [useAI, setUseAI] = useState(true)
 
     useEffect(() => { 
         load() 
@@ -111,6 +116,22 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
         }
     }
 
+    async function fetchDynamicConcept(conceptName) {
+        if (!useAI) return
+        setLoadingDynamic(true)
+        try {
+            const result = await getConceptDynamic(conceptName, true)
+            console.log('Dynamic concept content:', result)
+            if (!result.error) {
+                setDynamicConcept(result)
+            }
+        } catch (err) {
+            console.error('Error fetching dynamic concept:', err)
+        } finally {
+            setLoadingDynamic(false)
+        }
+    }
+
     function selectConceptByIndex(index) {
         const conceptName = conceptKeys[index]
         const fullConceptData = data.concepts[conceptName]
@@ -134,6 +155,12 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
             setQuizAnswers({})
             setQuizSubmitted(false)
             setQuizScore(null)
+            setDynamicConcept(null)
+            
+            // Fetch AI-generated content
+            if (useAI) {
+                fetchDynamicConcept(conceptName)
+            }
         }
     }
 
@@ -162,6 +189,13 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
             setQuizAnswers({})
             setQuizSubmitted(false)
             setQuizScore(null)
+            setDynamicConcept(null)
+            
+            // Fetch AI-generated content
+            if (useAI) {
+                fetchDynamicConcept(conceptName)
+            }
+            
             if (onConceptSelect) onConceptSelect(concept)
         }
     }
@@ -304,6 +338,34 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                                 </button>
                             </div>
 
+                            {/* AI Toggle */}
+                            <div className="flex items-center gap-4 mb-4 p-3 bg-gray-800 rounded">
+                                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={useAI}
+                                        onChange={(e) => {
+                                            setUseAI(e.target.checked)
+                                            if (e.target.checked && !dynamicConcept && selectedConcept) {
+                                                fetchDynamicConcept(selectedConcept.name)
+                                            }
+                                        }}
+                                        className="w-4 h-4 rounded"
+                                    />
+                                    <span>🤖 AI Content</span>
+                                </label>
+                                {loadingDynamic && (
+                                    <span className="text-purple-400 text-sm animate-pulse">
+                                        ⏳ Generating with Gemini...
+                                    </span>
+                                )}
+                                {dynamicConcept?.generated_by === 'AI' && !loadingDynamic && (
+                                    <span className="text-green-400 text-sm">
+                                        ✨ AI Content Loaded
+                                    </span>
+                                )}
+                            </div>
+
                             {/* Score Bar */}
                             <div className="flex items-center gap-4 mb-4 p-3 bg-gray-800 rounded">
                                 <div className="flex-1">
@@ -383,18 +445,37 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                             {activeTab === 'content' && (
                                 <div className="space-y-4">
                                     <div className="p-4 bg-gray-800 rounded-lg">
-                                        <h4 className="text-sm font-semibold text-blue-400 mb-2">Overview</h4>
-                                        <p className="text-gray-300 text-sm leading-relaxed">
-                                            {selectedConcept.description}
-                                        </p>
+                                        <h4 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
+                                            Overview
+                                            {dynamicConcept?.generated_by === 'AI' && (
+                                                <span className="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">AI Generated</span>
+                                            )}
+                                        </h4>
+                                        {loadingDynamic ? (
+                                            <div className="flex items-center gap-3">
+                                                <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                                                <span className="text-gray-400">Generating content...</span>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-300 text-sm leading-relaxed">
+                                                {dynamicConcept?.description || selectedConcept.description}
+                                            </p>
+                                        )}
                                     </div>
                                     
-                                    {selectedConcept.detailed_content && (
+                                    {(dynamicConcept?.detailed_content || selectedConcept.detailed_content) && (
                                         <div className="p-4 bg-gray-800 rounded-lg">
                                             <h4 className="text-sm font-semibold text-blue-400 mb-2">Detailed Explanation</h4>
-                                            <p className="text-gray-300 text-sm leading-relaxed">
-                                                {selectedConcept.detailed_content}
-                                            </p>
+                                            {loadingDynamic ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                                                    <span className="text-gray-400">Generating detailed content...</span>
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
+                                                    {dynamicConcept?.detailed_content || selectedConcept.detailed_content}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
 
@@ -426,13 +507,21 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                             {/* Examples Tab */}
                             {activeTab === 'examples' && (
                                 <div className="space-y-4">
-                                    {selectedConcept.examples && selectedConcept.examples.length > 0 ? (
-                                        selectedConcept.examples.map((ex, i) => (
+                                    {loadingDynamic ? (
+                                        <div className="p-8 bg-gray-800 rounded-lg text-center">
+                                            <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+                                            <span className="text-gray-400">Generating code examples with AI...</span>
+                                        </div>
+                                    ) : (dynamicConcept?.examples || selectedConcept.examples)?.length > 0 ? (
+                                        (dynamicConcept?.examples || selectedConcept.examples).map((ex, i) => (
                                             <div key={i} className="p-4 bg-gray-800 rounded-lg">
-                                                <h4 className="text-sm font-semibold text-green-400 mb-2">
+                                                <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
                                                     Example {i + 1}: {ex.title}
+                                                    {dynamicConcept?.generated_by === 'AI' && (
+                                                        <span className="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">AI</span>
+                                                    )}
                                                 </h4>
-                                                <pre className="bg-gray-900 p-3 rounded text-sm text-gray-300 overflow-x-auto font-mono">
+                                                <pre className="bg-gray-900 p-3 rounded text-sm text-gray-300 overflow-x-auto font-mono whitespace-pre-wrap">
                                                     {ex.code}
                                                 </pre>
                                             </div>
@@ -440,6 +529,14 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                                     ) : (
                                         <div className="p-4 bg-gray-800 rounded-lg text-gray-400 text-center">
                                             No examples available for this concept.
+                                            {useAI && !loadingDynamic && (
+                                                <button
+                                                    onClick={() => fetchDynamicConcept(selectedConcept.name)}
+                                                    className="block mx-auto mt-3 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm"
+                                                >
+                                                    🤖 Generate with AI
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -451,8 +548,9 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                                     {/* Loading State */}
                                     {quizLoading && (
                                         <div className="p-8 bg-gray-800 rounded-lg text-center">
-                                            <div className="text-2xl mb-2">⏳</div>
-                                            <div className="text-gray-300">Generating quiz questions...</div>
+                                            <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+                                            <div className="text-gray-300">🤖 Generating quiz questions with AI...</div>
+                                            <div className="text-gray-500 text-sm mt-1">This may take a few seconds</div>
                                         </div>
                                     )}
 

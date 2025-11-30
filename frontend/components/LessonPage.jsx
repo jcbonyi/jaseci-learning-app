@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react'
-import { recordLessonProgress, generateQuiz, updateMastery } from '../api'
+import { recordLessonProgress, generateQuiz, updateMastery, getLessonDynamic } from '../api'
 
 export default function LessonPage({userId, lesson, onComplete}) {
     const [completed, setCompleted] = useState(false)
@@ -11,8 +11,13 @@ export default function LessonPage({userId, lesson, onComplete}) {
     const [quizPassed, setQuizPassed] = useState(false)
     const [activeTab, setActiveTab] = useState('content')
     const [copiedIndex, setCopiedIndex] = useState(null)
+    
+    // AI-generated dynamic content
+    const [dynamicContent, setDynamicContent] = useState(null)
+    const [loadingContent, setLoadingContent] = useState(false)
+    const [useAI, setUseAI] = useState(true)
 
-    // Reset state when lesson changes
+    // Reset state and fetch dynamic content when lesson changes
     useEffect(() => {
         setCompleted(false)
         setQuizData(null)
@@ -21,7 +26,28 @@ export default function LessonPage({userId, lesson, onComplete}) {
         setQuizScore(null)
         setQuizPassed(false)
         setActiveTab('content')
+        setDynamicContent(null)
+        
+        // Fetch AI-generated content
+        if (lesson?.title && useAI) {
+            fetchDynamicContent()
+        }
     }, [lesson?.title])
+    
+    async function fetchDynamicContent() {
+        setLoadingContent(true)
+        try {
+            const result = await getLessonDynamic(lesson.title, true)
+            console.log('Dynamic lesson content:', result)
+            if (!result.error) {
+                setDynamicContent(result)
+            }
+        } catch (err) {
+            console.error('Error fetching dynamic content:', err)
+        } finally {
+            setLoadingContent(false)
+        }
+    }
 
     function copyCode(code, index) {
         navigator.clipboard.writeText(code)
@@ -106,9 +132,11 @@ export default function LessonPage({userId, lesson, onComplete}) {
         setQuizScore(null)
     }
 
-    // Get examples from lesson or use defaults based on title
-    const examples = lesson.examples || getDefaultExamples(lesson.title)
-    const detailedContent = lesson.detailed_content || getDefaultDetailedContent(lesson.title)
+    // Get examples from dynamic content, lesson, or defaults
+    const examples = dynamicContent?.examples || lesson.examples || getDefaultExamples(lesson.title)
+    const detailedContent = dynamicContent?.detailed_content || lesson.detailed_content || getDefaultDetailedContent(lesson.title)
+    const keyPoints = dynamicContent?.key_points || []
+    const overview = dynamicContent?.overview || lesson.content || 'Lesson content will be displayed here.'
 
     function getDefaultExamples(title) {
         const exampleSets = {
@@ -163,11 +191,44 @@ export default function LessonPage({userId, lesson, onComplete}) {
                 )}
             </div>
 
+            {/* AI Toggle & Loading */}
+            <div className="flex items-center gap-4 mb-4">
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        checked={useAI}
+                        onChange={(e) => {
+                            setUseAI(e.target.checked)
+                            if (e.target.checked && !dynamicContent) {
+                                fetchDynamicContent()
+                            }
+                        }}
+                        className="w-4 h-4 rounded"
+                    />
+                    <span>🤖 AI-Generated Content</span>
+                </label>
+                {loadingContent && (
+                    <span className="text-purple-400 text-sm animate-pulse">
+                        ⏳ Generating with Gemini...
+                    </span>
+                )}
+                {dynamicContent?.generated_by === 'AI' && !loadingContent && (
+                    <span className="text-green-400 text-sm">
+                        ✨ AI Content Loaded
+                    </span>
+                )}
+            </div>
+
             {/* Overview */}
             <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-lg p-4 mb-4 border border-blue-800">
-                <p className="text-gray-200 leading-relaxed">
-                    {lesson.content || 'Lesson content will be displayed here.'}
-                </p>
+                {loadingContent ? (
+                    <div className="flex items-center gap-3">
+                        <div className="animate-spin w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                        <span className="text-gray-300">Generating lesson overview with AI...</span>
+                    </div>
+                ) : (
+                    <p className="text-gray-200 leading-relaxed">{overview}</p>
+                )}
             </div>
 
             {/* Tab Navigation */}
@@ -224,20 +285,34 @@ export default function LessonPage({userId, lesson, onComplete}) {
                     <div className="bg-gray-900 rounded-lg p-5 border border-gray-700">
                         <h3 className="text-lg font-semibold text-green-400 mb-3 flex items-center gap-2">
                             🎯 Key Takeaways
+                            {keyPoints.length > 0 && dynamicContent?.generated_by === 'AI' && (
+                                <span className="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">AI Generated</span>
+                            )}
                         </h3>
                         <ul className="space-y-2">
-                            <li className="flex items-start gap-2 text-gray-300">
-                                <span className="text-green-400 mt-1">✓</span>
-                                <span>Understanding {lesson.title} is fundamental to Jac programming</span>
-                            </li>
-                            <li className="flex items-start gap-2 text-gray-300">
-                                <span className="text-green-400 mt-1">✓</span>
-                                <span>Practice with the code examples to reinforce your learning</span>
-                            </li>
-                            <li className="flex items-start gap-2 text-gray-300">
-                                <span className="text-green-400 mt-1">✓</span>
-                                <span>Take the quiz to test your knowledge and track progress</span>
-                            </li>
+                            {keyPoints.length > 0 ? (
+                                keyPoints.map((point, i) => (
+                                    <li key={i} className="flex items-start gap-2 text-gray-300">
+                                        <span className="text-green-400 mt-1">✓</span>
+                                        <span>{point}</span>
+                                    </li>
+                                ))
+                            ) : (
+                                <>
+                                    <li className="flex items-start gap-2 text-gray-300">
+                                        <span className="text-green-400 mt-1">✓</span>
+                                        <span>Understanding {lesson.title} is fundamental to Jac programming</span>
+                                    </li>
+                                    <li className="flex items-start gap-2 text-gray-300">
+                                        <span className="text-green-400 mt-1">✓</span>
+                                        <span>Practice with the code examples to reinforce your learning</span>
+                                    </li>
+                                    <li className="flex items-start gap-2 text-gray-300">
+                                        <span className="text-green-400 mt-1">✓</span>
+                                        <span>Take the quiz to test your knowledge and track progress</span>
+                                    </li>
+                                </>
+                            )}
                         </ul>
                     </div>
                 </div>
@@ -282,8 +357,9 @@ export default function LessonPage({userId, lesson, onComplete}) {
                     {/* Loading State */}
                     {loading && (
                         <div className="p-8 bg-gray-900 rounded-lg text-center border border-gray-700">
-                            <div className="text-3xl mb-2">⏳</div>
-                            <div className="text-gray-300">Generating quiz questions...</div>
+                            <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+                            <div className="text-gray-300">🤖 Generating quiz questions with AI...</div>
+                            <div className="text-gray-500 text-sm mt-1">This may take a few seconds</div>
                         </div>
                     )}
 

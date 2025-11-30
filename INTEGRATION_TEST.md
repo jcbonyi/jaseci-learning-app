@@ -4,9 +4,9 @@ This document provides a step-by-step guide to test all features of the Interact
 
 ## Prerequisites
 
-- **Python 3.10+** with `jaclang` and `jac-cloud` installed
+- **Python 3.10+** with `jaclang`, `jac-cloud`, `byllm`, and `python-dotenv` installed
 - **Node.js 16+** with npm
-- Both backend and frontend running (see Quick Start in README.md)
+- **Gemini API Key** in `backend/.env`
 
 ## Architecture Overview
 
@@ -14,54 +14,51 @@ This document provides a step-by-step guide to test all features of the Interact
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Frontend (React + Vite)                       │
 │  - Vite dev server on http://localhost:5173                    │
-│  - Dashboard with interactive concept cards                     │
-│  - Lesson pages with detailed content & examples               │
-│  - Code Playground with Jac Code & Walker API modes            │
+│  - Dashboard with AI-powered concept cards                      │
+│  - Lesson pages with dynamic AI content                        │
+│  - Code Playground with Walker API mode                         │
 │  - Persistent notes feature                                     │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
               fetch('/walker/...')
-              fetch('/api/run-jac')
                        │ (proxied by Vite)
                        │
 ┌──────────────────────▼──────────────────────────────────────────┐
 │              Backend (jac-cloud server)                         │
 │  - HTTP server on http://localhost:8000                        │
 │  - All-in-one main.jac with nodes and walkers                  │
-│  - LocalDB for persistence (.jac_mydb/)                        │
-│  - 10 walkers for all app functionality                        │
+│  - Gemini AI integration via byllm                             │
+│  - LocalDB for persistence                                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Step 1: Start the Application
 
-### 1.1 Start Backend
+### 1.1 Set Up API Key
 
-**Option A: Use startup script (Windows)**
-```powershell
-# Double-click start-backend.bat
-# Or in PowerShell:
-.\start-backend.ps1
+Create `backend/.env`:
+```
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
-**Option B: Manual start**
+Get a free key at: https://aistudio.google.com/apikey
+
+### 1.2 Start Backend
+
 ```bash
 cd backend
-# Windows PowerShell:
-$env:REQUIRE_AUTH_BY_DEFAULT="false"; jac serve main.jac
-
-# Linux/Mac/WSL:
-REQUIRE_AUTH_BY_DEFAULT=false jac serve main.jac
+python start_server.py
 ```
 
 Expected output:
 ```
+✓ Gemini API key detected.
+Starting Jac backend with command: jac serve main.jac
 INFO - DATABASE_HOST is not available! Using LocalDB...
-INFO:     Started server process [...]
 INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
 
-### 1.2 Start Frontend
+### 1.3 Start Frontend
 
 Open a new terminal:
 ```bash
@@ -76,7 +73,7 @@ Expected output:
   ➜  Local:   http://localhost:5173/
 ```
 
-### 1.3 Verify Both Running
+### 1.4 Verify Both Running
 
 Open **http://localhost:5173/** - you should see:
 - Header showing "Interactive Jac Tutor" with "● API Online" indicator
@@ -97,51 +94,54 @@ Open **http://localhost:5173/** - you should see:
    - Blue = Proficient (70-84%)
    - Green = Mastered (85%+)
 
-### 2.2 Concept Detail Panel
+### 2.2 Concept Detail Panel with AI Content
 
 1. Click on **"Jac syntax"** card
 2. A detail panel opens with:
+   - **🤖 AI Content** toggle checkbox
    - Navigation arrows (← Previous / Next →)
    - Progress bar with score
    - Three tabs: **📖 Content**, **💻 Examples**, **📝 Take Quiz**
 
-### 2.3 Test Content Tab
+### 2.3 Test AI-Generated Content
+
+1. Ensure **"🤖 AI Content"** checkbox is checked
+2. See **"⏳ Generating with Gemini..."** while loading
+3. See **"✨ AI Content Loaded"** when done
+4. Content shows **"AI Generated"** badge
+
+### 2.4 Test Content Tab
 
 1. Click **📖 Content** tab (default)
 2. Verify you see:
-   - "📘 Detailed Explanation" section
-   - "🎯 Key Takeaways" section
+   - "Overview" section with AI-generated intro
+   - "Detailed Explanation" section
    - "📝 Your Notes" section with textarea
 
-### 2.4 Test Examples Tab
+### 2.5 Test Examples Tab
 
-1. Click **💻 Code Examples** tab
+1. Click **💻 Examples** tab
 2. Verify:
-   - Multiple code examples displayed
-   - Each has a title and copy button
-   - Click "📋 Copy" - should show "✓ Copied!"
+   - Multiple AI-generated code examples
+   - Each has a title and "AI" badge
+   - Code is properly formatted
 
-### 2.5 Test Quiz Tab
+### 2.6 Test Quiz Tab (5 Questions)
 
 1. Click **📝 Take Quiz** tab
-2. Verify:
-   - 3 multiple choice questions appear
+2. See **"🤖 Generating quiz questions with AI..."**
+3. Verify:
+   - **5 multiple choice questions** appear (AI-generated)
    - Select answers for all questions
    - Click "Submit Quiz" button
    - Score displayed (🎉 Passed! or 📚 Keep Learning!)
    - Click "Retry Quiz" to try again
 
-### 2.6 Test Practice Buttons
+### 2.7 Test Practice Buttons
 
 1. In the detail panel, click **"+ Practice (+10%)"**
 2. Score increases by 10%
 3. Progress bar and Skill Map update immediately
-
-### 2.7 Test Mark Mastered
-
-1. Click **"Mark Mastered"**
-2. Score jumps to 100%
-3. Card shows "Mastered" badge
 
 ---
 
@@ -163,89 +163,80 @@ Open **http://localhost:5173/** - you should see:
 
 ---
 
-## Step 4: Test Lesson Page
+## Step 4: Test Lesson Page with AI Content
 
 ### 4.1 View Lesson
 
 1. Scroll to the Lesson section (below Dashboard)
 2. Current lesson shows with:
    - Title and difficulty stars
-   - Concept tags
-   - Overview in gradient box
+   - **🤖 AI-Generated Content** toggle
+   - Overview (AI-generated)
 
-### 4.2 Test Lesson Tabs
+### 4.2 Test AI Content Toggle
 
-1. **📖 Lesson Content** - Detailed explanation + key takeaways
-2. **💻 Code Examples** - Multiple examples with copy buttons
-3. **📝 Take Quiz** - Multiple choice quiz
+1. Enable **"🤖 AI-Generated Content"** checkbox
+2. See loading spinner: "Generating lesson overview with AI..."
+3. Content updates with AI-generated material
+4. **"✨ AI Content Loaded"** indicator appears
 
-### 4.3 Test Quiz Requirement
+### 4.3 Test Lesson Tabs
+
+1. **📖 Lesson Content** - AI-generated detailed explanation + key takeaways
+2. **💻 Code Examples** - AI-generated examples
+3. **📝 Take Quiz** - 5 AI-generated questions
+
+### 4.4 Test Quiz Requirement
 
 1. Notice the **"Mark Complete"** button is **disabled** (gray)
 2. See the yellow warning: "You must pass the quiz (score ≥ 70%)..."
 3. Click **"Take Quiz →"** link or the Quiz tab
-4. Answer all questions and submit
+4. Answer all 5 questions and submit
 5. If score ≥ 70%:
    - "🎉 Passed!" message appears
    - "Mark Complete" button becomes **enabled** (blue)
-   - Message shows: "✓ Quiz passed! You can now mark this lesson complete."
 6. If score < 70%:
    - "📚 Keep Learning!" message appears
    - Click "Retry Quiz" to try again
-   - "Mark Complete" remains disabled
 
-### 4.4 Test Mark Complete
+### 4.5 Test Mark Complete
 
 1. After passing quiz, click **"✓ Mark Complete"** button
 2. Lesson marked as complete
 3. Dashboard refreshes automatically
-4. Next lesson appears (if available)
+4. Next lesson appears
 
 ---
 
 ## Step 5: Test Code Playground
 
-### 5.1 Test Jac Code Mode (Default)
+### 5.1 Test Walker API Mode (Recommended)
 
 1. Scroll to "Code Playground" section
-2. Ensure **"🔧 Jac Code"** button is selected (green)
-3. The editor should have sample code:
-   ```jac
-   let a = 5;
-   let b = 7;
-   let sum = a + b;
-   print("Sum =", sum);
-   ```
+2. Click **"🚀 Walker API"** button
+3. Editor shows: `get_dashboard({ user_id: "demo_user" })`
 4. Click **"▶ Run"**
-5. Output shows: `Sum = 12`
+5. Output shows JSON with user data, concepts, scores
 
-### 5.2 Test Example Buttons
-
-Click the example buttons and run each:
-
-| Button | Code | Expected Output |
-|--------|------|-----------------|
-| Variables | `let a = 5; ...` | `Sum = 12` |
-| For Loop | `for i in range(5) ...` | Count: 0, 1, 2, 3, 4 |
-| List Sum | `let nums = [1,2,3,4,5]; ...` | `Total: 15` |
-| Node | `node person { ... }` | Name and age printed |
-| Walker | `walker explorer { ... }` | Visits cities |
-
-### 5.3 Test Walker API Mode
-
-1. Click **"🚀 Walker API"** button
-2. Editor changes to: `get_dashboard({ user_id: "demo_user" })`
-3. Click **"▶ Run"**
-4. Output shows JSON with user data, concepts, scores
-
-### 5.4 Test Quick Buttons (Walker Mode)
+### 5.2 Test Quick Buttons (Walker Mode)
 
 | Button | Output |
 |--------|--------|
 | Dashboard | User's concept scores and progress |
 | Next Lesson | Next recommended lesson |
 | Recommendations | Weakest concepts to study |
-| Generate Quiz | Quiz questions for a concept |
+| Static Quiz | Quiz questions (non-AI) |
+
+### 5.3 Test AI Generation Buttons
+
+In Walker API mode, find the purple **"🤖 AI Generation"** section:
+
+| Button | Description |
+|--------|-------------|
+| 🎯 AI Quiz: Walkers | Generate 5 AI quiz questions |
+| 🎯 AI Quiz: Nodes | Generate quiz about nodes |
+| 📚 AI Lesson | Generate lesson content |
+| 💡 AI Concept | Generate concept description |
 
 ---
 
@@ -255,7 +246,7 @@ Click the example buttons and run each:
 
 1. Practice a few concepts (click +10%)
 2. Add notes to concepts
-3. Complete a lesson
+3. Complete a lesson (pass quiz first!)
 
 ### 6.2 Verify Persistence
 
@@ -264,11 +255,10 @@ Click the example buttons and run each:
 
 ### 6.3 Reset Data (Optional)
 
-To start fresh:
+To start fresh, restart the backend:
 ```bash
 cd backend
-rm -rf .jac_mydb __jac_gen__ __pycache__
-# Restart the backend
+python start_server.py
 ```
 
 ---
@@ -288,38 +278,49 @@ curl -X POST http://localhost:8000/walker/get_dashboard \
   -H "Content-Type: application/json" \
   -d '{"user_id": "test_user"}'
 
-# Save a note
-curl -X POST http://localhost:8000/walker/save_note \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "concept_name": "Walkers", "note_text": "Important concept!"}'
-
-# Get notes
-curl -X POST http://localhost:8000/walker/get_notes \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user"}'
-
-# Generate quiz
+# Generate AI quiz (5 questions)
 curl -X POST http://localhost:8000/walker/generate_quiz \
   -H "Content-Type: application/json" \
   -d '{"concept_name": "Walkers"}'
+
+# Get dynamic lesson content (AI)
+curl -X POST http://localhost:8000/walker/get_lesson_dynamic \
+  -H "Content-Type: application/json" \
+  -d '{"lesson_title": "Intro to Jac syntax", "use_ai": true}'
+
+# Get dynamic concept content (AI)
+curl -X POST http://localhost:8000/walker/get_concept_dynamic \
+  -H "Content-Type: application/json" \
+  -d '{"concept_name": "Walkers", "use_ai": true}'
 ```
 
 ---
 
 ## Summary of All Walkers
 
+### Core Walkers
+
 | Walker | Arguments | Returns |
 |--------|-----------|---------|
 | `create_user` | `user_id` | `{status, user}` |
-| `get_next_lesson` | `user_id` | `{next_lesson: {...}}` or `{recommended_review}` |
+| `get_next_lesson` | `user_id` | `{next_lesson}` |
 | `record_lesson_progress` | `user_id, lesson_title, completed` | `{status, completed_lessons}` |
-| `get_dashboard` | `user_id` | `{user, completed_lessons, concepts, concept_order}` |
-| `generate_quiz` | `concept_name` | `{quiz_id, concept, questions, passing_score}` |
-| `evaluate_answer` | `quiz_id, submitted_answers` | `{score}` |
+| `get_dashboard` | `user_id` | `{user, completed_lessons, concepts}` |
+| `generate_quiz` | `concept_name` | `{quiz_id, questions}` (5 AI questions) |
 | `recommend_next` | `user_id` | `{recommendations}` |
-| `update_mastery` | `user_id, concept_name, score` | `{status, concept, score}` |
-| `save_note` | `user_id, concept_name, note_text` | `{status, concept}` |
-| `get_notes` | `user_id` | `{notes: {...}}` |
+| `update_mastery` | `user_id, concept_name, score` | `{status, score}` |
+| `save_note` | `user_id, concept_name, note_text` | `{status}` |
+| `get_notes` | `user_id` | `{notes}` |
+
+### AI-Powered Walkers
+
+| Walker | Arguments | Returns |
+|--------|-----------|---------|
+| `get_lesson_dynamic` | `lesson_title, use_ai` | AI-generated lesson content |
+| `get_concept_dynamic` | `concept_name, use_ai` | AI-generated concept content |
+| `generate_quiz_with_ai` | `concept_name, num_questions` | AI quiz (default 5 questions) |
+| `generate_lesson_with_ai` | `topic, difficulty` | Full AI lesson |
+| `generate_concept_with_ai` | `name, difficulty` | Full AI concept |
 
 ---
 
@@ -327,41 +328,36 @@ curl -X POST http://localhost:8000/walker/generate_quiz \
 
 | Issue | Solution |
 |-------|----------|
-| `npm install` fails | Ensure Node.js 16+ (`node --version`). Try `npm cache clean --force`. |
-| `jac serve` fails | Check `main.jac` for syntax errors. Ensure jaclang installed. |
-| `403 Forbidden` | Use startup scripts or set `REQUIRE_AUTH_BY_DEFAULT=false`. |
-| "No concepts to display" | Delete `.jac_mydb/` and restart backend. |
-| "API Offline" | Ensure backend running on port 8000. |
-| Code Playground ENOENT error | Restart frontend (`npm run dev`). |
-| Notes not saving | Check backend has `save_note` walker. Restart backend. |
-| Quiz shows JSON instead of questions | Update frontend - quiz should show multiple choice. |
-| "Mark Complete" is disabled | You must pass the quiz first (score ≥ 70%). Take the quiz! |
-| Can't complete lesson | Pass the quiz, then the Mark Complete button will enable. |
+| `API key not valid` | Check `backend/.env` has valid `GEMINI_API_KEY` |
+| AI content not loading | Ensure `byllm` installed: `pip install byllm` |
+| `npm install` fails | Ensure Node.js 16+ (`node --version`) |
+| `jac serve` fails | Check `main.jac` for syntax errors |
+| "API Offline" | Ensure backend running on port 8000 |
+| Notes not saving | Restart backend |
+| Quiz shows 3 questions | Update code - should be 5 now |
+| "Mark Complete" disabled | Pass the quiz first (≥70%) |
 
 ---
 
 ## ✅ Test Checklist
 
-- [ ] Backend starts successfully
+- [ ] Backend starts with "✓ Gemini API key detected"
 - [ ] Frontend shows "API Online"
 - [ ] 7 concept cards displayed
-- [ ] Concept detail panel opens on click
-- [ ] Content tab shows detailed explanation
-- [ ] Examples tab shows code with copy buttons
-- [ ] Quiz tab shows multiple choice questions
+- [ ] AI toggle works in concept detail panel
+- [ ] AI content generates with loading indicator
+- [ ] Content tab shows AI-generated overview
+- [ ] Examples tab shows AI-generated code
+- [ ] Quiz generates **5 AI questions**
 - [ ] Quiz scoring works correctly
 - [ ] Practice +10% updates score
-- [ ] Mark Mastered sets 100%
 - [ ] Notes auto-save and persist
-- [ ] Lesson page displays with tabs
-- [ ] **Mark Complete disabled until quiz passed**
-- [ ] **Quiz requirement warning displayed**
-- [ ] **Mark Complete enabled after passing quiz (≥70%)**
-- [ ] Mark Complete advances to next lesson
-- [ ] Code Playground Jac mode runs code
-- [ ] Code Playground Walker mode calls API
-- [ ] All data persists after refresh
+- [ ] Lesson page shows AI-generated content
+- [ ] Mark Complete disabled until quiz passed
+- [ ] Mark Complete enabled after passing (≥70%)
+- [ ] Walker API mode works in Code Playground
+- [ ] AI Generation buttons work
 
 ---
 
-**All tests passing? 🎉 The app is fully functional!**
+**All tests passing? 🎉 The app is fully functional with AI!**

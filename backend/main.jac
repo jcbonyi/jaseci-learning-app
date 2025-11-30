@@ -1,5 +1,12 @@
 """main.jac - All-in-one Jac tutor backend"""
 
+# ============ byLLM AI Features ============
+# Requires: GEMINI_API_KEY environment variable
+
+import from byllm.lib { Model }
+
+glob llm = Model(model_name="gemini/gemini-2.0-flash");
+
 # ============ NODE DEFINITIONS ============
 
 node user {
@@ -448,66 +455,28 @@ walker recommend_next {
 
 walker generate_quiz {
     has concept_name: str;
+    has use_ai: bool = True;
 
     can generate with `root entry {
-        # Find the concept to generate questions for
-        target_concept = None;
-        for c in [-->(`?concept)] {
-            if c.name == self.concept_name {
-                target_concept = c;
-                break;
-            }
-        }
+        print("📝 Generating quiz for:", self.concept_name, "| AI mode:", self.use_ai);
         
         questions = [];
         
-        # Generate concept-specific questions
-        if self.concept_name == "Jac syntax" {
-            questions = [
-                {"q": "What keyword is used to declare fields in a node or walker?", "options": ["var", "let", "has", "def"], "answer": "has", "type": "multiple"},
-                {"q": "Which of these is a valid node definition?", "options": ["node user { has name: str; }", "class user { name: str }", "def user(name)", "struct user { name }"], "answer": "node user { has name: str; }", "type": "multiple"},
-                {"q": "What symbol ends most statements in Jac?", "options": [":", ".", ";", ","], "answer": ";", "type": "multiple"}
-            ];
-        } elif self.concept_name == "Nodes & edges" {
-            questions = [
-                {"q": "Which operator creates a generic edge between two nodes?", "options": ["->", "++>", "=>", "-->"], "answer": "++>", "type": "multiple"},
-                {"q": "How do you access all nodes connected to a node?", "options": ["node.children", "[node -->]", "node.edges", "get_connected(node)"], "answer": "[node -->]", "type": "multiple"},
-                {"q": "What keyword defines a custom edge type?", "options": ["connection", "link", "edge", "relation"], "answer": "edge", "type": "multiple"}
-            ];
-        } elif self.concept_name == "Walkers" {
-            questions = [
-                {"q": "What keyword is used to return data from a walker?", "options": ["return", "yield", "report", "output"], "answer": "report", "type": "multiple"},
-                {"q": "How do you stop a walker's traversal immediately?", "options": ["stop", "break", "exit", "disengage"], "answer": "disengage", "type": "multiple"},
-                {"q": "What does 'visit [-->]' do in a walker?", "options": ["Creates edges", "Moves to connected nodes", "Deletes nodes", "Prints nodes"], "answer": "Moves to connected nodes", "type": "multiple"}
-            ];
-        } elif self.concept_name == "GraphOps" {
-            questions = [
-                {"q": "How do you filter nodes by type in Jac?", "options": ["filter(type)", "[-->(`?NodeType)]", "nodes.type()", "get_type()"], "answer": "[-->(`?NodeType)]", "type": "multiple"},
-                {"q": "What does '-->' return when used on a node?", "options": ["Edge count", "Node properties", "Connected nodes", "Parent node"], "answer": "Connected nodes", "type": "multiple"},
-                {"q": "Which is valid for accessing incoming edges?", "options": ["<--", "-->", "<->", "<<-"], "answer": "<--", "type": "multiple"}
-            ];
-        } elif self.concept_name == "OSP" {
-            questions = [
-                {"q": "What does 'here' refer to in a walker ability?", "options": ["The walker itself", "The current node", "The root node", "The parent node"], "answer": "The current node", "type": "multiple"},
-                {"q": "What does OSP stand for?", "options": ["Object-Spatial Programming", "Ordered State Protocol", "Open Source Platform", "Object System Pattern"], "answer": "Object-Spatial Programming", "type": "multiple"},
-                {"q": "In OSP, where does computation occur?", "options": ["Central server", "At node locations in the graph", "External API", "Database"], "answer": "At node locations in the graph", "type": "multiple"}
-            ];
-        } elif self.concept_name == "byLLM" {
-            questions = [
-                {"q": "What decorator enables LLM-powered abilities?", "options": ["@ai", "@llm", "by llm()", "@generate"], "answer": "by llm()", "type": "multiple"},
-                {"q": "Which environment variable is needed for byLLM?", "options": ["LLM_KEY", "AI_TOKEN", "OPENAI_API_KEY", "GPT_SECRET"], "answer": "OPENAI_API_KEY", "type": "multiple"},
-                {"q": "What does byLLM use to understand what to generate?", "options": ["Magic", "Function signature and docstring", "Random guessing", "External config"], "answer": "Function signature and docstring", "type": "multiple"}
-            ];
-        } elif self.concept_name == "AI agents" {
-            questions = [
-                {"q": "What combination creates AI agents in Jac?", "options": ["Nodes + edges", "Walkers + byLLM", "Classes + methods", "Functions + loops"], "answer": "Walkers + byLLM", "type": "multiple"},
-                {"q": "What makes walkers good for AI agents?", "options": ["They are fast", "They traverse graphs and make decisions", "They use less memory", "They are simple"], "answer": "They traverse graphs and make decisions", "type": "multiple"},
-                {"q": "AI agents can combine which two Jac concepts?", "options": ["OSP + byLLM", "Syntax + edges", "Nodes + walkers", "Variables + loops"], "answer": "OSP + byLLM", "type": "multiple"}
-            ];
+        if self.use_ai {
+            # Use AI to generate questions dynamically
+            ai_questions = generate_quiz_questions(self.concept_name, 5);
+            for q in ai_questions {
+                questions.append({
+                    "q": q.q,
+                    "type": "multiple",
+                    "options": q.options,
+                    "answer": q.answer
+                });
+            }
         } else {
+            # Fallback static questions
             questions = [
-                {"q": "What is the main purpose of " + self.concept_name + "?", "type": "short", "answer": ""},
-                {"q": "Describe a use case for " + self.concept_name + ".", "type": "short", "answer": ""}
+                {"q": "What is " + self.concept_name + " in Jac?", "options": ["A concept", "A feature", "A pattern", "All of the above"], "answer": "All of the above", "type": "multiple"}
             ];
         }
         
@@ -517,7 +486,7 @@ walker generate_quiz {
             passing_score=70
         );
         here ++> q;
-        report {"quiz_id": str(id(q)), "concept": self.concept_name, "questions": questions, "passing_score": 70};
+        report {"quiz_id": str(id(q)), "concept": self.concept_name, "questions": questions, "passing_score": 70, "generated_by": "AI" if self.use_ai else "static"};
     }
 }
 
@@ -593,5 +562,316 @@ walker get_notes {
         }
 
         report {"notes": u.notes};
+    }
+}
+
+
+
+# Define typed objects for structured LLM responses
+obj QuizQuestion {
+    has q: str;
+    has options: list[str];
+    has answer: str;
+}
+
+obj LessonContent {
+    has title: str;
+    has overview: str;
+    has detailed_content: str;
+    has key_points: list[str];
+    has example_titles: list[str];
+    has example_codes: list[str];
+}
+
+obj CodeExample {
+    has title: str;
+    has code: str;
+}
+
+obj ConceptContent {
+    has overview: str;
+    has explanation: str;
+    has example_titles: list[str];
+    has example_codes: list[str];
+}
+
+# AI-powered functions with typed returns
+def generate_quiz_questions(topic: str, count: int) -> list[QuizQuestion] by llm();
+"""Generate {count} multiple choice quiz questions about: {topic} in Jac programming.
+Each QuizQuestion needs:
+- q: the question text (string)
+- options: exactly 4 answer choices (list of 4 strings)
+- answer: the correct answer (must exactly match one of the options)
+Focus on Jac concepts: nodes, edges, walkers, has, can, spawn, visit, report.
+Make questions educational and test understanding, not memorization."""
+
+def generate_full_lesson(topic: str, level: str) -> LessonContent by llm();
+"""Generate a complete lesson about {topic} for {level} students.
+
+Return a LessonContent object with these EXACT fields:
+
+1. title: Short lesson title (plain text, no markdown)
+
+2. overview: 1-2 sentence summary of what will be learned (plain text, NO code)
+
+3. detailed_content: 2-3 paragraphs explaining the topic in depth (plain text, NO code, NO markdown)
+
+4. key_points: List of 3-5 short takeaway bullet points (plain text strings)
+
+5. example_titles: List of 2 short titles for code examples
+   Example: ["Simple Node", "Node with Methods"]
+
+6. example_codes: List of 2 Jac code snippets (valid code with comments, NO markdown)
+   Example:
+   node Counter {
+       has count: int = 0;
+   }
+"""
+
+def generate_full_concept(name: str, level: str) -> ConceptContent by llm();
+"""Generate educational content about the Jac programming concept: {name} for {level} level.
+
+Return a ConceptContent object with these EXACT fields:
+
+1. overview: A brief 2-3 sentence introduction. Plain text only, NO code.
+   Example: "Walkers are mobile units that traverse the graph. They can visit nodes and execute code at each location."
+
+2. explanation: A detailed 3-4 paragraph explanation. Plain text only, NO code, NO markdown.
+   Explain what it is, why it matters, and how to use it conceptually.
+
+3. example_titles: A list of 2 short titles for code examples.
+   Example: ["Basic Walker", "Walker with Parameters"]
+
+4. example_codes: A list of 2 Jac code snippets (matching the titles).
+   Each should be valid Jac code with comments. NO markdown fences.
+   Example code:
+   walker greet {
+       can say_hi with entry {
+           print("Hello!");
+       }
+   }
+"""
+
+# Dynamic Lesson Content Walker (AI-powered)
+walker get_lesson_dynamic {
+    has lesson_title: str;
+    has use_ai: bool = True;
+
+    can get with `root entry {
+        print("📚 Getting dynamic lesson:", self.lesson_title, "| AI mode:", self.use_ai);
+        
+        # Find the lesson
+        target_lesson = None;
+        for l in [-->(`?lesson)] {
+            if l.title == self.lesson_title {
+                target_lesson = l;
+                break;
+            }
+        }
+        
+        if target_lesson is None {
+            report {"error": "lesson_not_found"};
+            disengage;
+        }
+        
+        if self.use_ai {
+            # Generate content dynamically with AI - single call for all content
+            levels = ["beginner", "intermediate", "advanced"];
+            level = levels[target_lesson.difficulty - 1] if target_lesson.difficulty <= 3 else "beginner";
+            
+            # Single AI call to get all lesson content
+            content = generate_full_lesson(target_lesson.title, level);
+            
+            # Build examples from parallel lists
+            formatted_examples = [];
+            num_examples = len(content.example_titles);
+            for i in range(num_examples) {
+                formatted_examples.append({
+                    "title": content.example_titles[i],
+                    "code": content.example_codes[i] if i < len(content.example_codes) else ""
+                });
+            }
+            
+            report {
+                "title": target_lesson.title,
+                "concept": target_lesson.concept,
+                "overview": content.overview,
+                "detailed_content": content.detailed_content,
+                "key_points": content.key_points,
+                "examples": formatted_examples,
+                "difficulty": target_lesson.difficulty,
+                "order": target_lesson.order,
+                "generated_by": "AI"
+            };
+        } else {
+            # Return static content from the lesson node
+            report {
+                "title": target_lesson.title,
+                "concept": target_lesson.concept,
+                "overview": target_lesson.content,
+                "detailed_content": target_lesson.detailed_content,
+                "key_points": [],
+                "examples": target_lesson.examples,
+                "difficulty": target_lesson.difficulty,
+                "order": target_lesson.order,
+                "generated_by": "static"
+            };
+        }
+    }
+}
+
+# Dynamic Concept Content Walker (AI-powered)
+walker get_concept_dynamic {
+    has concept_name: str;
+    has use_ai: bool = True;
+
+    can get with `root entry {
+        print("🧠 Getting dynamic concept:", self.concept_name, "| AI mode:", self.use_ai);
+        
+        # Find the concept
+        target_concept = None;
+        for c in [-->(`?concept)] {
+            if c.name == self.concept_name {
+                target_concept = c;
+                break;
+            }
+        }
+        
+        if target_concept is None {
+            report {"error": "concept_not_found"};
+            disengage;
+        }
+        
+        if self.use_ai {
+            # Generate content dynamically with AI - single call for all content
+            levels = ["beginner", "intermediate", "advanced"];
+            level = levels[target_concept.difficulty - 1] if target_concept.difficulty <= 3 else "beginner";
+            
+            # Single AI call to get all content in correct structure
+            content = generate_full_concept(target_concept.name, level);
+            
+            # Build examples from parallel lists
+            formatted_examples = [];
+            num_examples = len(content.example_titles);
+            for i in range(num_examples) {
+                formatted_examples.append({
+                    "title": content.example_titles[i],
+                    "code": content.example_codes[i] if i < len(content.example_codes) else ""
+                });
+            }
+            
+            report {
+                "name": target_concept.name,
+                "description": content.overview,
+                "detailed_content": content.explanation,
+                "examples": formatted_examples,
+                "difficulty": target_concept.difficulty,
+                "order": target_concept.order,
+                "required_score": target_concept.required_score,
+                "mastery_score": target_concept.mastery_score,
+                "generated_by": "AI"
+            };
+        } else {
+            # Return static content from the concept node
+            report {
+                "name": target_concept.name,
+                "description": target_concept.description,
+                "detailed_content": target_concept.detailed_content,
+                "examples": target_concept.examples,
+                "difficulty": target_concept.difficulty,
+                "order": target_concept.order,
+                "required_score": target_concept.required_score,
+                "mastery_score": target_concept.mastery_score,
+                "generated_by": "static"
+            };
+        }
+    }
+}
+
+# AI Quiz Generator Walker
+walker generate_quiz_with_ai {
+    has concept_name: str;
+    has num_questions: int = 5;
+
+    can generate with `root entry {
+        print("🤖 Generating AI quiz for:", self.concept_name);
+        
+        questions = generate_quiz_questions(self.concept_name, self.num_questions);
+        
+        formatted = [];
+        for q in questions {
+            formatted.append({
+                "q": q.q,
+                "type": "multiple",
+                "options": q.options,
+                "answer": q.answer
+            });
+        }
+        
+        report {
+            "concept": self.concept_name,
+            "questions": formatted,
+            "generated_by": "OpenAI",
+            "count": len(formatted)
+        };
+    }
+}
+
+# AI Lesson Generator Walker
+walker generate_lesson_with_ai {
+    has topic: str;
+    has difficulty: int = 1;
+
+    can generate with `root entry {
+        print("🤖 Generating AI lesson for:", self.topic);
+        
+        levels = ["beginner", "intermediate", "advanced"];
+        level = levels[self.difficulty - 1] if self.difficulty <= 3 else "beginner";
+        
+        content = generate_lesson_content(self.topic, level);
+        examples = generate_code_examples(self.topic);
+        
+        formatted_examples = [];
+        for ex in examples {
+            formatted_examples.append({
+                "title": ex.title,
+                "code": ex.code
+            });
+        }
+        
+        report {
+            "title": content.title,
+            "overview": content.overview,
+            "detailed_content": content.detailed_content,
+            "key_points": content.key_points,
+            "examples": formatted_examples,
+            "difficulty": self.difficulty,
+            "generated_by": "OpenAI"
+        };
+    }
+}
+
+# AI Concept Generator Walker
+walker generate_concept_with_ai {
+    has name: str;
+    has difficulty: int = 1;
+
+    can generate with `root entry {
+        print("🤖 Generating AI concept for:", self.name);
+        
+        levels = ["beginner", "intermediate", "advanced"];
+        level = levels[self.difficulty - 1] if self.difficulty <= 3 else "beginner";
+        
+        description = generate_concept_description(self.name);
+        detailed = generate_concept_content(self.name, level);
+        
+        report {
+            "status": "generated",
+            "name": self.name,
+            "description": description,
+            "detailed_content": detailed,
+            "difficulty": self.difficulty,
+            "generated_by": "OpenAI"
+        };
     }
 }

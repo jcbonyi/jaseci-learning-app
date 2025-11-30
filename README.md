@@ -1,105 +1,104 @@
 # Interactive Learning Platform for Jac / Jaseci
 
-An adaptive learning platform built with Jac backend and React frontend for teaching Jac/Jaseci programming concepts.
+An adaptive learning platform built with Jac backend and React frontend for teaching Jac/Jaseci programming concepts. Features **AI-powered dynamic content generation** using Google Gemini.
 
 ## Features
 
+### 🤖 AI-Powered Dynamic Content
+- **Lessons** are generated dynamically with Gemini AI
+- **Quizzes** with 5 AI-generated multiple choice questions
+- **Concepts** get AI-generated overviews, explanations, and examples
+- Toggle between AI and static content
+
 ### 📊 Progress Dashboard
 - View all 7 Jac concepts with progress bars and mastery indicators
-- Click any concept card to see detailed explanations and examples
+- Click any concept card to see AI-generated explanations and examples
 - Skill map visualization showing your learning progress
 - Personalized recommendations for next concepts to study
 - **Persistent notes** - Add personal notes to any concept (auto-saved!)
 
 ### 📖 Interactive Lessons
 - **Tabbed interface** with Content, Examples, and Quiz sections
-- Detailed explanations for each concept
+- AI-generated detailed explanations for each concept
 - Multiple code examples with copy-to-clipboard functionality
 - Difficulty ratings shown as stars
 - **Quiz requirement** - Must pass quiz (≥70%) before completing lesson
 - Auto-advances to next lesson on completion
 
 ### 📝 Quizzes
-- Multiple choice questions for each concept
+- **5 AI-generated** multiple choice questions per quiz
 - Instant feedback showing correct/incorrect answers
 - **Passing score: 70%** required to complete lessons
 - Score tracking with pass/fail indicators
 - Mastery automatically updated based on quiz performance
-- Retry option for practice until passed
 
 ### 🔧 Code Playground
 - **Two modes:**
-  - **Jac Code** - Run actual Jac code snippets directly
+  - **Jac Code** - Run actual Jac code snippets (requires jac in PATH)
   - **Walker API** - Call Jac walkers via the API
 - Monaco Editor with syntax highlighting
 - Quick action buttons for common operations
-- Example code snippets for learning
 
 ## Project Structure
 
 ```
 JASECI_APP/
 ├── backend/
-│   ├── main.jac          # All-in-one backend (nodes, walkers, logic)
-│   ├── models/           # Node definitions (concept, lesson, quiz, user)
-│   └── walkers/          # Walker definitions
+│   ├── main.jac           # All-in-one backend (nodes, walkers, AI)
+│   ├── start_server.py    # Python launcher (loads .env)
+│   ├── .env               # API keys (GEMINI_API_KEY)
+│   └── README_BYLLM.md    # AI/LLM integration guide
 ├── frontend/
-│   ├── api.js            # API client for calling Jac walkers
-│   ├── App.jsx           # Main application component
+│   ├── api.js             # API client for calling Jac walkers
+│   ├── App.jsx            # Main application component
 │   ├── components/
-│   │   ├── Dashboard.jsx     # Main dashboard with concept cards
-│   │   ├── ConceptCard.jsx   # Individual concept display
-│   │   ├── LessonPage.jsx    # Lesson content with tabs
-│   │   ├── QuizPage.jsx      # Quiz interface
-│   │   ├── CodeEditor.jsx    # Code playground component
-│   │   └── SkillMap.jsx      # Progress visualization
-│   └── vite.config.js    # Vite config with Jac runner
-├── start-backend.bat     # Windows batch script to start backend
-├── start-backend.ps1     # PowerShell script to start backend
-└── README.md
+│   │   ├── Dashboard.jsx      # Main dashboard with concept cards
+│   │   ├── ConceptCard.jsx    # Individual concept display
+│   │   ├── LessonPage.jsx     # Lesson content with tabs
+│   │   ├── QuizPage.jsx       # Quiz interface
+│   │   ├── CodeEditor.jsx     # Code playground component
+│   │   └── SkillMap.jsx       # Progress visualization
+│   └── vite.config.js     # Vite config with API proxy
+├── README.md              # This file
+├── INTEGRATION_TEST.md    # Testing guide
+└── venv/                  # Python virtual environment
 ```
 
 ## Quick Start
 
 ### Prerequisites
 
-- Python 3.10+ with `jaclang` and `jac-cloud` installed
+- Python 3.10+ with `jaclang`, `jac-cloud`, and `byllm` installed
 - Node.js 16+ with npm
+- **Gemini API Key** (get free at https://aistudio.google.com/apikey)
 
 ### Backend Setup
 
 1. **Install Python dependencies:**
 
 ```bash
-cd backend
-python -m venv ../venv
+# Create and activate virtual environment
+python -m venv venv
 # Windows:
-..\venv\Scripts\activate
+venv\Scripts\activate
 # Linux/Mac:
-source ../venv/bin/activate
+source venv/bin/activate
 
-pip install jaclang jac-cloud
+pip install jaclang jac-cloud byllm python-dotenv
 ```
 
-2. **Start the backend server:**
+2. **Set up API key:**
 
-**Option A: Use startup script (recommended)**
-```bash
-# Windows - double-click start-backend.bat or run:
-.\start-backend.bat
-
-# PowerShell:
-.\start-backend.ps1
+Create `backend/.env`:
+```
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
-**Option B: Manual start**
+3. **Start the backend server:**
+
 ```bash
 cd backend
-# Windows PowerShell:
-$env:REQUIRE_AUTH_BY_DEFAULT="false"; jac serve main.jac
-
-# Linux/Mac/WSL:
-REQUIRE_AUTH_BY_DEFAULT=false jac serve main.jac
+python start_server.py
 ```
 
 The server starts on `http://localhost:8000`.
@@ -134,18 +133,29 @@ The platform teaches 7 Jac/Jaseci concepts in order:
 
 All walkers are exposed via HTTP at `POST /walker/{walker_name}`.
 
+### Core Walkers
+
 | Walker | Arguments | Returns |
 |--------|-----------|---------|
 | `create_user` | `user_id: string` | `{status, user}` |
 | `get_next_lesson` | `user_id: string` | `{next_lesson: {...}}` |
 | `record_lesson_progress` | `user_id, lesson_title, completed` | `{status, completed_lessons}` |
-| `get_dashboard` | `user_id: string` | `{user, completed_lessons, concepts, concept_order}` |
+| `get_dashboard` | `user_id: string` | `{user, completed_lessons, concepts}` |
 | `generate_quiz` | `concept_name: string` | `{quiz_id, concept, questions}` |
-| `evaluate_answer` | `quiz_id, submitted_answers` | `{score}` |
 | `recommend_next` | `user_id: string` | `{recommendations}` |
 | `update_mastery` | `user_id, concept_name, score` | `{status, concept, score}` |
 | `save_note` | `user_id, concept_name, note_text` | `{status, concept}` |
 | `get_notes` | `user_id: string` | `{notes: {...}}` |
+
+### AI-Powered Walkers (Gemini)
+
+| Walker | Arguments | Returns |
+|--------|-----------|---------|
+| `generate_quiz_with_ai` | `concept_name, num_questions` | AI-generated quiz questions |
+| `generate_lesson_with_ai` | `topic, difficulty` | AI-generated lesson content |
+| `generate_concept_with_ai` | `name, difficulty` | AI-generated concept |
+| `get_lesson_dynamic` | `lesson_title, use_ai` | Dynamic lesson content |
+| `get_concept_dynamic` | `concept_name, use_ai` | Dynamic concept content |
 
 ### Example API Calls
 
@@ -155,71 +165,64 @@ curl -X POST http://localhost:8000/walker/create_user \
   -H "Content-Type: application/json" \
   -d '{"user_id": "alice"}'
 
-# Get dashboard data
-curl -X POST http://localhost:8000/walker/get_dashboard \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "alice"}'
-
-# Generate a quiz
+# Get AI-generated quiz (5 questions)
 curl -X POST http://localhost:8000/walker/generate_quiz \
   -H "Content-Type: application/json" \
   -d '{"concept_name": "Walkers"}'
+
+# Get dynamic lesson content
+curl -X POST http://localhost:8000/walker/get_lesson_dynamic \
+  -H "Content-Type: application/json" \
+  -d '{"lesson_title": "Intro to Jac syntax", "use_ai": true}'
 ```
 
 ## Code Playground Usage
 
-### Jac Code Mode (Default)
-
-Run actual Jac code:
-
-```jac
-let a = 5;
-let b = 7;
-let sum = a + b;
-print("Sum =", sum);
-```
-
-### Walker API Mode
+### Walker API Mode (Recommended)
 
 Call walkers directly:
 
 ```javascript
 get_dashboard({ user_id: "demo_user" })
+generate_quiz({ concept_name: "Walkers" })
+```
+
+### Jac Code Mode
+
+Run actual Jac code (requires jac in PATH):
+
+```jac
+let a = 5;
+let b = 7;
+print("Sum =", a + b);
 ```
 
 ## Data Persistence
 
-- User progress, scores, and notes are stored in `.jac_mydb/` (LocalDB)
+- User progress, scores, and notes are stored in LocalDB
 - Data persists between sessions
-- To reset: delete `.jac_mydb/` folder and restart the backend
+- To reset: restart the backend (a new session starts fresh)
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| `403 Forbidden` on walker calls | Start server with `REQUIRE_AUTH_BY_DEFAULT=false` or use startup scripts |
-| `No concepts to display` | Delete `.jac_mydb/` folder and restart server |
-| `HTTP 500` errors | Check server terminal for Jac syntax errors |
+| `403 Forbidden` on walker calls | Use `python start_server.py` which sets auth flag |
+| `API key not valid` error | Check `backend/.env` has valid `GEMINI_API_KEY` |
+| AI content not loading | Ensure Gemini API key is set and `byllm` is installed |
 | Frontend shows "API Offline" | Ensure backend is running on port 8000 |
-| Code Playground shows ENOENT | Restart frontend dev server (`npm run dev`) |
-| Notes not saving | Ensure backend has `save_note` and `get_notes` walkers |
-| "Mark Complete" button disabled | You must pass the quiz (≥70%) first - take the quiz! |
-
-## Development Notes
-
-- Frontend uses Vite's proxy to forward `/walker/*` and `/api/*` requests to the backend
-- The Code Playground's Jac runner creates temp files and executes via `jac run`
-- Authentication is disabled for development ease
-- Quiz questions are concept-specific with proper multiple choice options
-
-## Additional Documentation
-
-- `backend/README_BYLLM.md` - Guide for LLM/OpenAI integration
-- `INTEGRATION_TEST.md` - Step-by-step testing walkthrough
+| "Mark Complete" button disabled | You must pass the quiz (≥70%) first |
+| Quiz only shows 3 questions | Update to latest code (now generates 5) |
 
 ## Tech Stack
 
-- **Backend:** Jac (jaclang), jac-cloud
+- **Backend:** Jac (jaclang), jac-cloud, byllm
+- **AI:** Google Gemini (gemini-2.0-flash) via LiteLLM
 - **Frontend:** React 18, Vite 5, Tailwind CSS
 - **Editor:** Monaco Editor (VS Code's editor)
 - **Database:** LocalDB (file-based persistence)
+
+## Additional Documentation
+
+- `backend/README_BYLLM.md` - Guide for AI/Gemini integration
+- `INTEGRATION_TEST.md` - Step-by-step testing walkthrough

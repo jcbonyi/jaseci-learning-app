@@ -1,203 +1,346 @@
-# byLLM (OpenAI) Integration Guide
+# Jaseci byLLM + Gemini AI Integration Guide
 
-This guide explains how to configure LLM integration for enhanced quiz generation and AI-powered features.
+This guide explains how to use Jaseci's **`by llm()`** feature with Google Gemini to dynamically generate lesson content, quizzes, and concepts.
 
-## Current Implementation
+## What is byLLM?
 
-The platform currently uses **static, concept-specific quiz questions** that are pre-defined in `main.jac`. Each concept has 3 multiple-choice questions with proper answers.
+`by llm()` is Jaseci's native LLM integration feature that allows you to:
+- Implement functions/abilities using Large Language Models
+- Get structured, typed outputs from LLM calls
+- Use docstrings as prompts
 
-### Supported Concepts with Quizzes
+## Quick Setup
 
-| Concept | Questions |
-|---------|-----------|
-| Jac syntax | `has` keyword, node definition, statement endings |
-| Nodes & edges | Edge operators, accessing connected nodes, edge keyword |
-| Walkers | `report`, `disengage`, `visit` commands |
-| GraphOps | Filtering by type, `-->` operator, incoming edges |
-| OSP | `here` keyword, OSP meaning, computation location |
-| byLLM | Decorator syntax, environment variable, function signature |
-| AI agents | Walker + byLLM combination, agent benefits, OSP + byLLM |
-
-## Adding OpenAI Integration (Optional)
-
-To enable dynamic LLM-powered quiz generation:
-
-### 1. Set Environment Variable
-
-**PowerShell:**
-```powershell
-$env:OPENAI_API_KEY = "sk-..."
-```
-
-**Bash/WSL:**
-```bash
-export OPENAI_API_KEY="sk-..."
-```
-
-### 2. Verify API Key
+### 1. Install Required Packages
 
 ```bash
-curl https://api.openai.com/v1/models \
-  -H "Authorization: Bearer $OPENAI_API_KEY"
+pip install byllm python-dotenv
 ```
 
-### 3. Modify Quiz Generation
+### 2. Get a Gemini API Key
 
-Edit `backend/main.jac` and update the `generate_quiz` walker to call OpenAI:
+1. Go to https://aistudio.google.com/apikey
+2. Create a new API key (it's free!)
+3. Copy the key
+
+### 3. Set Up Environment
+
+Create `backend/.env`:
+```
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+### 4. Start the Backend
+
+```bash
+cd backend
+python start_server.py
+```
+
+You should see:
+```
+✓ Gemini API key detected.
+Starting Jac backend...
+```
+
+## How It Works
+
+### Import and Configure
+
+In `main.jac`:
+```jac
+import from byllm.lib { Model }
+
+glob llm = Model(model_name="gemini/gemini-2.0-flash");
+```
+
+### Define Structured Outputs
 
 ```jac
-walker generate_quiz_llm {
+obj QuizQuestion {
+    has q: str;
+    has options: list[str];
+    has answer: str;
+}
+
+obj ConceptContent {
+    has overview: str;
+    has explanation: str;
+    has example_titles: list[str];
+    has example_codes: list[str];
+}
+```
+
+### Create LLM-Powered Functions
+
+```jac
+def generate_quiz_questions(topic: str, count: int) -> list[QuizQuestion] by llm();
+"""Generate {count} multiple choice quiz questions about: {topic} in Jac programming.
+Each QuizQuestion needs:
+- q: the question text (string)
+- options: exactly 4 answer choices (list of 4 strings)
+- answer: the correct answer (must exactly match one of the options)
+"""
+```
+
+## Available AI Walkers
+
+### `generate_quiz` / `generate_quiz_with_ai`
+
+Generates **5 AI-powered** multiple-choice quiz questions.
+
+**Arguments:**
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `concept_name` | str | required | Topic for questions |
+| `num_questions` | int | 5 | Number of questions |
+
+**Example:**
+```javascript
+// In Code Playground - Walker API mode
+generate_quiz({ concept_name: "Walkers" })
+```
+
+**Response:**
+```json
+{
+  "concept": "Walkers",
+  "questions": [
+    {
+      "q": "What keyword returns data from a walker?",
+      "type": "multiple",
+      "options": ["return", "yield", "report", "output"],
+      "answer": "report"
+    }
+  ],
+  "generated_by": "AI"
+}
+```
+
+---
+
+### `get_lesson_dynamic`
+
+Gets lesson content with optional AI generation.
+
+**Arguments:**
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `lesson_title` | str | required | Title of the lesson |
+| `use_ai` | bool | true | Generate with AI |
+
+**Example:**
+```javascript
+get_lesson_dynamic({ lesson_title: "Intro to Jac syntax", use_ai: true })
+```
+
+**Response:**
+```json
+{
+  "title": "Intro to Jac syntax",
+  "overview": "This lesson covers...",
+  "detailed_content": "Jac is a graph-based...",
+  "key_points": ["Variables use let", "Semicolons required"],
+  "examples": [
+    {"title": "Hello World", "code": "print(\"Hello!\");"}
+  ],
+  "generated_by": "AI"
+}
+```
+
+---
+
+### `get_concept_dynamic`
+
+Gets concept information with optional AI generation.
+
+**Arguments:**
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `concept_name` | str | required | Name of the concept |
+| `use_ai` | bool | true | Generate with AI |
+
+**Example:**
+```javascript
+get_concept_dynamic({ concept_name: "Nodes & edges", use_ai: true })
+```
+
+**Response:**
+```json
+{
+  "name": "Nodes & edges",
+  "description": "Nodes are fundamental...",
+  "detailed_content": "In Jac, nodes represent...",
+  "examples": [
+    {"title": "Basic Node", "code": "node Person { has name: str; }"}
+  ],
+  "generated_by": "AI"
+}
+```
+
+---
+
+### `generate_lesson_with_ai`
+
+Generates complete lesson content for any topic.
+
+**Arguments:**
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `topic` | str | required | Topic to create lesson about |
+| `difficulty` | int | 1 | 1=beginner, 2=intermediate, 3=advanced |
+
+---
+
+### `generate_concept_with_ai`
+
+Creates a new concept with AI-generated content.
+
+**Arguments:**
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `name` | str | required | Name of the concept |
+| `difficulty` | int | 1 | Difficulty level 1-3 |
+
+## byLLM Implementation Details
+
+### Single Unified Call Pattern
+
+To avoid content mixing, we use a single AI call that returns all fields:
+
+```jac
+obj ConceptContent {
+    has overview: str;
+    has explanation: str;
+    has example_titles: list[str];
+    has example_codes: list[str];
+}
+
+def generate_full_concept(name: str, level: str) -> ConceptContent by llm();
+"""Generate educational content about the Jac programming concept: {name} for {level} level.
+
+Return a ConceptContent object with these EXACT fields:
+
+1. overview: A brief 2-3 sentence introduction. Plain text only, NO code.
+
+2. explanation: A detailed 3-4 paragraph explanation. Plain text only, NO code.
+
+3. example_titles: A list of 2 short titles for code examples.
+
+4. example_codes: A list of 2 Jac code snippets (matching the titles).
+"""
+```
+
+### Walker Using the Function
+
+```jac
+walker get_concept_dynamic {
     has concept_name: str;
-    has num_questions: int = 3;
+    has use_ai: bool = True;
 
-    can generate with `root entry {
-        # Find concept for context
-        target_concept = None;
-        for c in [-->(`?concept)] {
-            if c.name == self.concept_name {
-                target_concept = c;
-                break;
+    can get with `root entry {
+        if self.use_ai {
+            content = generate_full_concept(self.concept_name, "beginner");
+            
+            # Build examples from parallel lists
+            formatted_examples = [];
+            for i in range(len(content.example_titles)) {
+                formatted_examples.append({
+                    "title": content.example_titles[i],
+                    "code": content.example_codes[i]
+                });
             }
+            
+            report {
+                "name": self.concept_name,
+                "description": content.overview,
+                "detailed_content": content.explanation,
+                "examples": formatted_examples,
+                "generated_by": "AI"
+            };
         }
-        
-        context = "";
-        if target_concept is not None {
-            context = target_concept.detailed_content;
-        }
-        
-        # Build prompt
-        prompt = f"""Generate {self.num_questions} multiple choice questions about {self.concept_name} in Jac/Jaseci.
-
-Context: {context}
-
-Return as JSON array with format:
-[
-  {{
-    "q": "Question text",
-    "type": "multiple",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "answer": "Correct option text"
-  }}
-]""";
-
-        # TODO: Call OpenAI API here
-        # response = call_openai(prompt);
-        # questions = parse_json(response);
-        
-        # For now, fall back to static questions
-        questions = [...];  # Static fallback
-        
-        q = quiz(concept=self.concept_name, questions=questions, passing_score=70);
-        here ++> q;
-        report {"quiz_id": str(id(q)), "concept": self.concept_name, "questions": questions};
     }
 }
 ```
 
-## Alternative: Python Proxy for OpenAI
+## Supported LLM Providers
 
-Create a Python proxy service that the Jac backend can call:
+The `byllm` package supports multiple providers via LiteLLM:
 
-### `backend/openai_proxy.py`
+| Provider | Model | Environment Variable |
+|----------|-------|---------------------|
+| **Google Gemini** | `gemini/gemini-2.0-flash` | `GEMINI_API_KEY` |
+| OpenAI | `openai/gpt-4o-mini` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic/claude-3` | `ANTHROPIC_API_KEY` |
 
-```python
-from fastapi import FastAPI
-from openai import OpenAI
-import json
-import os
+To switch providers, change the model in `main.jac`:
+```jac
+// For Gemini (default)
+glob llm = Model(model_name="gemini/gemini-2.0-flash");
 
-app = FastAPI()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-@app.post("/generate-quiz")
-async def generate_quiz(concept: str, context: str = "", num_questions: int = 3):
-    prompt = f"""Generate {num_questions} multiple choice questions about {concept}.
-    Context: {context}
-    Return as JSON array with q, type, options, answer fields."""
-    
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"}
-    )
-    
-    return json.loads(response.choices[0].message.content)
+// For OpenAI
+glob llm = Model(model_name="openai/gpt-4o-mini");
 ```
-
-Run with:
-```bash
-pip install fastapi uvicorn openai
-uvicorn openai_proxy:app --port 8001
-```
-
-Then call from Jac via HTTP (if your Jac version supports it).
 
 ## Security Best Practices
 
-1. **Never commit API keys** - Use environment variables only
-2. **Add to .gitignore:**
+1. **Never commit API keys** - Use `.env` files only
+
+2. **Add to `.gitignore`:**
    ```
    .env
    *.env
    ```
-3. **Rate limiting** - Cache generated quizzes to reduce API costs
-4. **Cost monitoring** - Set usage limits in OpenAI dashboard
-5. **Validate responses** - Always validate LLM output before using
 
-## Quiz Question Format
+3. **Use `python-dotenv`** - The `start_server.py` loads keys automatically
 
-The frontend expects questions in this format:
+4. **Rate limiting** - Gemini has generous free limits but monitor usage
 
-```json
-{
-  "q": "What keyword declares fields in Jac?",
-  "type": "multiple",
-  "options": ["var", "let", "has", "def"],
-  "answer": "has"
-}
+## Cost Information
+
+| Provider | Model | Cost |
+|----------|-------|------|
+| **Gemini** | gemini-2.0-flash | **Free** (with limits) |
+| OpenAI | gpt-4o-mini | $0.15/1M input tokens |
+| OpenAI | gpt-4o | $5/1M input tokens |
+
+**Gemini is recommended** for this app as it's free and fast!
+
+## Troubleshooting
+
+### "API key not valid" Error
+
+```bash
+# Check if key is in .env
+cat backend/.env
+
+# Should show:
+# GEMINI_API_KEY=AIza...
 ```
 
-- `type: "multiple"` → Radio button selection
-- `type: "short"` → Text input (for open-ended questions)
-- `answer` must exactly match one of the `options`
+### "byllm not found" Error
 
-## Testing Quiz Generation
-
-Use the Code Playground in Walker API mode:
-
-```javascript
-generate_quiz({ concept_name: "Walkers" })
+```bash
+pip install byllm
 ```
 
-Expected output:
-```json
-{
-  "quiz_id": "...",
-  "concept": "Walkers",
-  "questions": [
-    {
-      "q": "What keyword is used to return data from a walker?",
-      "type": "multiple",
-      "options": ["return", "yield", "report", "output"],
-      "answer": "report"
-    },
-    ...
-  ],
-  "passing_score": 70
-}
-```
+### AI content not loading
 
-## Future Enhancements
+1. Check backend terminal for errors
+2. Verify API key is valid
+3. Try restarting the backend
 
-- [ ] Integrate OpenAI for dynamic question generation
-- [ ] Add question difficulty levels
-- [ ] Generate explanations for wrong answers
-- [ ] Create adaptive quizzes based on user performance
-- [ ] Support multiple LLM providers (Anthropic, Gemini, etc.)
+### Content appears in wrong fields
+
+This was fixed by using unified `ConceptContent` and `LessonContent` objects that return all fields in a single AI call.
+
+## Related Resources
+
+- [Jaseci Documentation](https://docs.jaseci.org/)
+- [Google AI Studio](https://aistudio.google.com/)
+- [Jac Language Guide](https://www.jac-lang.org/)
+- [byllm Package](https://pypi.org/project/byllm/)
 
 ---
 
-For more information:
-- [Jaseci Documentation](https://docs.jaseci.org/)
-- [OpenAI API Docs](https://platform.openai.com/docs/)
-- [LangChain for Jac](https://github.com/Jaseci-Labs) (future)
+*Last updated: November 2025*

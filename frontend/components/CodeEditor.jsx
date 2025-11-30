@@ -23,6 +23,9 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code })
             })
+            if (!response.ok) {
+                return { error: `Server error: ${response.status}. Make sure Vite is running properly.` }
+            }
             const result = await response.json()
             if (result.success) {
                 return { output: result.output || '(no output)' }
@@ -30,6 +33,13 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                 return { error: result.error || 'Unknown error' }
             }
         } catch (e) {
+            // Provide helpful error message
+            if (e.message.includes('Failed to fetch')) {
+                return { 
+                    error: `Jac Code execution is not available.\n\nThis feature requires the Vite middleware to run 'jac' commands.\n\nAlternatives:\n1. Use "Walker API" mode to call walkers\n2. Run jac code directly in terminal: jac run yourfile.jac`,
+                    tip: 'Switch to Walker API mode for testing walker calls'
+                }
+            }
             return { error: `Failed to run code: ${e.message}` }
         }
     }
@@ -173,7 +183,7 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
     return (
         <div>
             {/* Mode Toggle */}
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-3 items-center">
                 <button
                     onClick={() => {
                         setMode('jac')
@@ -204,6 +214,11 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                 >
                     🚀 Walker API
                 </button>
+                {mode === 'jac' && (
+                    <span className="text-xs text-yellow-400 ml-2">
+                        ⚠️ Requires jac in PATH
+                    </span>
+                )}
             </div>
 
             <div className="border border-gray-600 rounded overflow-hidden">
@@ -275,13 +290,13 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                         </button>
                         <button 
                             className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded transition-colors"
-                            onClick={() => { if (editorRef.current) editorRef.current.setValue('node person {\n    has name: str;\n    has age: int;\n}\n\nlet p = person(name="Alice", age=30);\nprint("Name:", p.name);\nprint("Age:", p.age);') }}
+                            onClick={() => { if (editorRef.current) editorRef.current.setValue('node Person {\n    has name: str;\n    has age: int;\n}\n\nwith entry {\n    let p = Person(name="Alice", age=30);\n    print("Name:", p.name);\n    print("Age:", p.age);\n}') }}
                         >
                             Node
                         </button>
                         <button 
                             className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded transition-colors"
-                            onClick={() => { if (editorRef.current) editorRef.current.setValue('node city {\n    has name: str;\n}\n\nwalker explorer {\n    can visit with `root entry {\n        here ++> city(name="Paris");\n        here ++> city(name="Tokyo");\n        visit [-->];\n    }\n    can greet with city entry {\n        print("Visiting:", here.name);\n    }\n}\n\nroot spawn explorer();') }}
+                            onClick={() => { if (editorRef.current) editorRef.current.setValue('node City {\n    has name: str;\n}\n\nwalker Explorer {\n    can discover with `root entry {\n        here ++> City(name="Paris");\n        here ++> City(name="Tokyo");\n        visit [-->];\n    }\n    can greet with City entry {\n        print("Visiting:", here.name);\n    }\n}\n\nwith entry {\n    root spawn Explorer();\n}') }}
                         >
                             Walker
                         </button>
@@ -310,11 +325,87 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                             className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded transition-colors"
                             onClick={() => { if (editorRef.current) editorRef.current.setValue(`generate_quiz({ concept_name: "Walkers" })`) }}
                         >
-                            Generate Quiz
+                            Static Quiz
                         </button>
                     </>
                 )}
             </div>
+            
+            {/* AI Generation Section */}
+            {mode === 'walker' && (
+                <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded border border-purple-700/50">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-purple-300">🤖 AI Generation (Jac byLLM + OpenAI):</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        <button 
+                            className="text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1.5 rounded transition-colors"
+                            onClick={async () => {
+                                setLoading(true);
+                                try {
+                                    const { generateQuizWithAI } = await import('../api');
+                                    const result = await generateQuizWithAI("Walkers", 3);
+                                    setOutput(result);
+                                } catch (e) {
+                                    setOutput({ error: e.message });
+                                }
+                                setLoading(false);
+                            }}
+                        >
+                            🎯 AI Quiz: Walkers
+                        </button>
+                        <button 
+                            className="text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1.5 rounded transition-colors"
+                            onClick={async () => {
+                                setLoading(true);
+                                try {
+                                    const { generateQuizWithAI } = await import('../api');
+                                    const result = await generateQuizWithAI("Nodes & edges", 3);
+                                    setOutput(result);
+                                } catch (e) {
+                                    setOutput({ error: e.message });
+                                }
+                                setLoading(false);
+                            }}
+                        >
+                            🎯 AI Quiz: Nodes
+                        </button>
+                        <button 
+                            className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1.5 rounded transition-colors"
+                            onClick={async () => {
+                                setLoading(true);
+                                try {
+                                    const { generateLessonWithAI } = await import('../api');
+                                    const result = await generateLessonWithAI("Graph Traversal in Jac", 2);
+                                    setOutput(result);
+                                } catch (e) {
+                                    setOutput({ error: e.message });
+                                }
+                                setLoading(false);
+                            }}
+                        >
+                            📚 AI Lesson: Graph Traversal
+                        </button>
+                        <button 
+                            className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded transition-colors"
+                            onClick={async () => {
+                                setLoading(true);
+                                try {
+                                    const { generateConceptWithAI } = await import('../api');
+                                    const result = await generateConceptWithAI("Spatial Computing", 1);
+                                    setOutput(result);
+                                } catch (e) {
+                                    setOutput({ error: e.message });
+                                }
+                                setLoading(false);
+                            }}
+                        >
+                            💡 AI Concept: Spatial Computing
+                        </button>
+                    </div>
+                </div>
+            )}
+            
             <div className="mt-4">
                 <h4 className="font-semibold text-gray-300 mb-2">Output</h4>
                 <pre className="bg-gray-900 text-green-400 p-4 rounded max-h-64 overflow-auto text-sm font-mono border border-gray-700 whitespace-pre-wrap">
