@@ -2,7 +2,7 @@
 
 An adaptive learning platform built with Jac backend and React frontend for teaching Jac/Jaseci programming concepts. Features **AI-powered dynamic content generation** using Google Gemini.
 
-## Features
+## ✨ Features
 
 ### 🤖 AI-Powered Dynamic Content
 - **Lessons** are generated dynamically with Gemini AI
@@ -16,55 +16,108 @@ An adaptive learning platform built with Jac backend and React frontend for teac
 - Skill map visualization showing your learning progress
 - Personalized recommendations for next concepts to study
 - **Persistent notes** - Add personal notes to any concept (auto-saved!)
+- **Export/Import progress** - Backup and restore your learning data
+- **Breadcrumb navigation** - Always know where you are
 
 ### 📖 Interactive Lessons
 - **Tabbed interface** with Content, Examples, and Quiz sections
 - AI-generated detailed explanations for each concept
 - Multiple code examples with copy-to-clipboard functionality
+- **"Try it" buttons** - Click to load code examples directly into the playground
 - Difficulty ratings shown as stars
 - **Quiz requirement** - Must pass quiz (≥70%) before completing lesson
 - Auto-advances to next lesson on completion
 
-### 📝 Quizzes
+### 📝 Quizzes & Quiz Review
 - **5 AI-generated** multiple choice questions per quiz
 - Instant feedback showing correct/incorrect answers
 - **Passing score: 70%** required to complete lessons
 - Score tracking with pass/fail indicators
 - Mastery automatically updated based on quiz performance
+- **Quiz History** - Review past quiz attempts and see where you went wrong
+- **Quiz Review Mode** - Analyze incorrect answers to learn from mistakes
+
+### 🏅 Achievement Badges
+- Earn badges for milestones (First Steps, Quiz Taker, Master, Scholar, etc.)
+- **8 achievements** to unlock as you progress:
+  | Badge | Name | Requirement |
+  |-------|------|-------------|
+  | 🎯 | First Steps | Complete your first lesson |
+  | 📝 | Quiz Taker | Complete 3 quizzes |
+  | ⭐ | Rising Star | Score 80%+ on any quiz |
+  | 🏆 | Master | Master any concept (85%+) |
+  | 📚 | Scholar | Complete all 7 concepts |
+  | 🔥 | Streak | 3 lessons in a row |
+  | 💡 | Explorer | Try all 7 concepts |
+  | 👑 | Perfectionist | 100% mastery on any concept |
+- Track your accomplishments in the sidebar
 
 ### 🔧 Code Playground
 - **Two modes:**
-  - **Jac Code** - Run actual Jac code snippets (requires jac in PATH)
-  - **Walker API** - Call Jac walkers via the API
+  - **Jac Code** - Run actual Jac code snippets (WSL users: run in terminal)
+  - **Walker API** - Call Jac walkers via the API (recommended)
 - Monaco Editor with syntax highlighting
+- **Keyboard shortcut**: `Ctrl+Enter` to run code
 - Quick action buttons for common operations
+- AI generation buttons for dynamic content
+- **Copy to clipboard** - Share code easily
 
-## Project Structure
+### 🎨 User Experience
+- **Dark/Light theme toggle** - Switch between dark and light modes (persists)
+- **Mobile responsive** - Works on phones and tablets
+- **Skeleton loading states** - Smooth loading experience
+- **Persistent data** - Your progress saves automatically to SQLite
+- **API caching** - Faster load times with smart response caching (1-min TTL)
+- **Offline support** - Service Worker caches app for offline access
+- **Better error handling** - Clear error messages and API status indicator
+
+### 📈 Learning Analytics Dashboard
+- **Summary statistics** - Average scores, mastery counts, quiz attempts
+- **Progress visualization** - See breakdown by status (Mastered, Passed, In Progress, Not Started)
+- **Score distribution** - Understand your performance patterns
+- **Concept breakdown** - Detailed view of each concept's progress with scores
+- **Personalized tips** - Get suggestions based on your current progress
+
+## 📁 Project Structure
 
 ```
 JASECI_APP/
 ├── backend/
-│   ├── main.jac           # All-in-one backend (nodes, walkers, AI)
-│   ├── start_server.py    # Python launcher (loads .env)
-│   ├── .env               # API keys (GEMINI_API_KEY)
-│   └── README_BYLLM.md    # AI/LLM integration guide
+│   ├── main.jac              # All-in-one backend (nodes, walkers, AI)
+│   ├── start_server.py       # Python launcher (loads .env, sets DB path)
+│   ├── requirements.txt      # Python dependencies (pinned versions)
+│   ├── data/                 # Persistent user data (auto-created)
+│   │   └── jaseci_db/        # SQLite database files
+│   ├── .env                  # API keys (GEMINI_API_KEY)
+│   └── README_BYLLM.md       # AI/LLM integration guide
 ├── frontend/
-│   ├── api.js             # API client for calling Jac walkers
-│   ├── App.jsx            # Main application component
+│   ├── api.js                # API client with caching & cache invalidation
+│   ├── App.jsx               # Main app with theme & error handling
+│   ├── main.jsx              # Entry point with Service Worker registration
 │   ├── components/
-│   │   ├── Dashboard.jsx      # Main dashboard with concept cards
-│   │   ├── ConceptCard.jsx    # Individual concept display
-│   │   ├── LessonPage.jsx     # Lesson content with tabs
-│   │   ├── QuizPage.jsx       # Quiz interface
-│   │   ├── CodeEditor.jsx     # Code playground component
-│   │   └── SkillMap.jsx       # Progress visualization
-│   └── vite.config.js     # Vite config with API proxy
-├── README.md              # This file
-├── INTEGRATION_TEST.md    # Testing guide
-└── venv/                  # Python virtual environment
+│   │   ├── Dashboard.jsx     # Main dashboard with concept cards
+│   │   ├── ConceptCard.jsx   # Individual concept display
+│   │   ├── LessonPage.jsx    # Lesson content with tabs
+│   │   ├── QuizPage.jsx      # Quiz interface
+│   │   ├── CodeEditor.jsx    # Code playground (2 modes, keyboard shortcuts)
+│   │   ├── SkillMap.jsx      # Progress visualization
+│   │   ├── Skeleton.jsx      # Loading skeleton components
+│   │   ├── Achievements.jsx  # Achievement badges system (8 badges)
+│   │   ├── QuizHistory.jsx   # Quiz review mode
+│   │   ├── ProgressManager.jsx # Export/import progress
+│   │   ├── ThemeProvider.jsx # Dark/light theme toggle
+│   │   ├── Breadcrumb.jsx    # Navigation breadcrumbs
+│   │   ├── CodeContext.jsx   # "Try it" buttons for code examples
+│   │   └── Analytics.jsx     # Learning analytics dashboard
+│   ├── public/
+│   │   └── sw.js             # Service Worker for offline support
+│   └── vite.config.js        # Vite config with API proxy
+├── README.md                 # This file
+├── INTEGRATION_TEST.md       # Step-by-step testing guide
+└── .gitignore                # Ignores node_modules, .env, data/
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -84,7 +137,10 @@ venv\Scripts\activate
 # Linux/Mac:
 source venv/bin/activate
 
-pip install jaclang jac-cloud byllm python-dotenv
+# Install with pinned versions
+pip install -r backend/requirements.txt
+# Or manually:
+pip install jaclang==0.8.10 jac-cloud==0.2.0 byllm python-dotenv
 ```
 
 2. **Set up API key:**
@@ -101,7 +157,29 @@ cd backend
 python start_server.py
 ```
 
-The server starts on `http://localhost:8000`.
+Expected output:
+```
+✓ Gemini API key detected.
+💾 Database path: C:\...\backend\data\jaseci_db
+🚀 Starting Jac server...
+INFO:     Uvicorn running on http://0.0.0.0:8000
+```
+
+### Data Persistence
+
+User progress is automatically saved to `backend/data/jaseci_db` (SQLite-based LocalDB).
+
+**Your progress persists across server restarts!**
+
+To reset all data, delete the `backend/data/` folder:
+```bash
+rm -rf backend/data/
+```
+
+For production, you can use MongoDB instead by setting `DATABASE_HOST` in `.env`:
+```
+DATABASE_HOST=mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority
+```
 
 ### Frontend Setup
 
@@ -115,7 +193,7 @@ npm run dev
 
 2. Open `http://localhost:5173` in your browser.
 
-## Concepts Covered
+## 📚 Concepts Covered
 
 The platform teaches 7 Jac/Jaseci concepts in order:
 
@@ -129,7 +207,7 @@ The platform teaches 7 Jac/Jaseci concepts in order:
 | 6 | **byLLM** | LLM-backed decorators | ⭐⭐⭐ |
 | 7 | **AI agents** | Building intelligent agents | ⭐⭐⭐ |
 
-## API Endpoints
+## 🔌 API Endpoints
 
 All walkers are exposed via HTTP at `POST /walker/{walker_name}`.
 
@@ -176,7 +254,7 @@ curl -X POST http://localhost:8000/walker/get_lesson_dynamic \
   -d '{"lesson_title": "Intro to Jac syntax", "use_ai": true}'
 ```
 
-## Code Playground Usage
+## 🎮 Code Playground Usage
 
 ### Walker API Mode (Recommended)
 
@@ -197,13 +275,7 @@ let b = 7;
 print("Sum =", a + b);
 ```
 
-## Data Persistence
-
-- User progress, scores, and notes are stored in LocalDB
-- Data persists between sessions
-- To reset: restart the backend (a new session starts fresh)
-
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
@@ -213,16 +285,24 @@ print("Sum =", a + b);
 | Frontend shows "API Offline" | Ensure backend is running on port 8000 |
 | "Mark Complete" button disabled | You must pass the quiz (≥70%) first |
 | Quiz only shows 3 questions | Update to latest code (now generates 5) |
+| Progress not saving | Check `backend/data/` directory exists |
+| `jac serve` fails | Ensure jaclang==0.8.10 and jac-cloud==0.2.0 |
 
-## Tech Stack
+## 🛠 Tech Stack
 
-- **Backend:** Jac (jaclang), jac-cloud, byllm
+- **Backend:** Jac (jaclang 0.8.10), jac-cloud 0.2.0, byllm
 - **AI:** Google Gemini (gemini-2.0-flash) via LiteLLM
 - **Frontend:** React 18, Vite 5, Tailwind CSS
 - **Editor:** Monaco Editor (VS Code's editor)
-- **Database:** LocalDB (file-based persistence)
+- **Database:** LocalDB (SQLite-based persistence)
+- **Caching:** In-memory API response cache with TTL
+- **Offline:** Service Worker with cache-first strategy
 
-## Additional Documentation
+## 📖 Additional Documentation
 
 - `backend/README_BYLLM.md` - Guide for AI/Gemini integration
 - `INTEGRATION_TEST.md` - Step-by-step testing walkthrough
+
+---
+
+*Built with ❤️ using Jac and React*

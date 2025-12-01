@@ -12,6 +12,7 @@ __jac_gen__/
 
 # Database
 .jac_mydb/
+backend/data/
 
 # Environment
 .env

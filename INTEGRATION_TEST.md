@@ -4,7 +4,7 @@ This document provides a step-by-step guide to test all features of the Interact
 
 ## Prerequisites
 
-- **Python 3.10+** with `jaclang`, `jac-cloud`, `byllm`, and `python-dotenv` installed
+- **Python 3.10+** with `jaclang==0.8.10`, `jac-cloud==0.2.0`, `byllm`, and `python-dotenv` installed
 - **Node.js 16+** with npm
 - **Gemini API Key** in `backend/.env`
 
@@ -17,20 +17,23 @@ This document provides a step-by-step guide to test all features of the Interact
 │  - Dashboard with AI-powered concept cards                      │
 │  - Lesson pages with dynamic AI content                        │
 │  - Code Playground with Walker API mode                         │
-│  - Persistent notes feature                                     │
+│  - Theme toggle, achievements, analytics                        │
+│  - Service Worker for offline support                          │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
               fetch('/walker/...')
-                       │ (proxied by Vite)
+                       │ (proxied by Vite, cached by api.js)
                        │
 ┌──────────────────────▼──────────────────────────────────────────┐
 │              Backend (jac-cloud server)                         │
 │  - HTTP server on http://localhost:8000                        │
 │  - All-in-one main.jac with nodes and walkers                  │
 │  - Gemini AI integration via byllm                             │
-│  - LocalDB for persistence                                      │
+│  - SQLite LocalDB for persistence (backend/data/)              │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ## Step 1: Start the Application
 
@@ -53,7 +56,10 @@ python start_server.py
 Expected output:
 ```
 ✓ Gemini API key detected.
-Starting Jac backend with command: jac serve main.jac
+💾 Database path: C:\...\backend\data\jaseci_db
+🚀 Starting Jac server...
+   Press Ctrl+C to stop
+
 INFO - DATABASE_HOST is not available! Using LocalDB...
 INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
@@ -77,15 +83,28 @@ Expected output:
 
 Open **http://localhost:5173/** - you should see:
 - Header showing "Interactive Jac Tutor" with "● API Online" indicator
+- **Theme toggle** button (🌙/☀️) in the header
 - Progress Dashboard with 7 concept cards
 - Skill Map on the right
 - Code Playground at the bottom
+- **Achievements** section in the sidebar
 
 ---
 
-## Step 2: Test Dashboard Features
+## Step 2: Test Theme Toggle
 
-### 2.1 Concept Cards
+### 2.1 Toggle Theme
+
+1. Click the **🌙** (moon) icon in the header
+2. The entire app switches to **light mode**
+3. Click the **☀️** (sun) icon to switch back to **dark mode**
+4. Refresh the page - **theme preference persists!**
+
+---
+
+## Step 3: Test Dashboard Features
+
+### 3.1 Concept Cards
 
 1. **View all concepts** - 7 cards showing Jac syntax → AI agents
 2. **Check status indicators:**
@@ -94,7 +113,7 @@ Open **http://localhost:5173/** - you should see:
    - Blue = Proficient (70-84%)
    - Green = Mastered (85%+)
 
-### 2.2 Concept Detail Panel with AI Content
+### 3.2 Concept Detail Panel with AI Content
 
 1. Click on **"Jac syntax"** card
 2. A detail panel opens with:
@@ -103,51 +122,107 @@ Open **http://localhost:5173/** - you should see:
    - Progress bar with score
    - Three tabs: **📖 Content**, **💻 Examples**, **📝 Take Quiz**
 
-### 2.3 Test AI-Generated Content
+### 3.3 Test AI-Generated Content
 
 1. Ensure **"🤖 AI Content"** checkbox is checked
 2. See **"⏳ Generating with Gemini..."** while loading
 3. See **"✨ AI Content Loaded"** when done
 4. Content shows **"AI Generated"** badge
 
-### 2.4 Test Content Tab
-
-1. Click **📖 Content** tab (default)
-2. Verify you see:
-   - "Overview" section with AI-generated intro
-   - "Detailed Explanation" section
-   - "📝 Your Notes" section with textarea
-
-### 2.5 Test Examples Tab
+### 3.4 Test "Try it" Buttons
 
 1. Click **💻 Examples** tab
-2. Verify:
-   - Multiple AI-generated code examples
-   - Each has a title and "AI" badge
-   - Code is properly formatted
-
-### 2.6 Test Quiz Tab (5 Questions)
-
-1. Click **📝 Take Quiz** tab
-2. See **"🤖 Generating quiz questions with AI..."**
-3. Verify:
-   - **5 multiple choice questions** appear (AI-generated)
-   - Select answers for all questions
-   - Click "Submit Quiz" button
-   - Score displayed (🎉 Passed! or 📚 Keep Learning!)
-   - Click "Retry Quiz" to try again
-
-### 2.7 Test Practice Buttons
-
-1. In the detail panel, click **"+ Practice (+10%)"**
-2. Score increases by 10%
-3. Progress bar and Skill Map update immediately
+2. Each code example has a **"Try it →"** button
+3. Click the button - code is loaded into the Code Playground
+4. The playground scrolls into view automatically
 
 ---
 
-## Step 3: Test Notes Feature
+## Step 4: Test Learning Analytics
 
-### 3.1 Add a Note
+### 4.1 Open Analytics Dashboard
+
+1. In the sidebar, click **📈 Analytics** button
+2. A modal opens showing:
+   - **Summary cards**: Avg Score, Mastered, Lessons Done, Quiz Attempts
+   - **Progress bar**: Visual breakdown by status
+   - **Score distribution**: Chart showing score ranges
+   - **Concept breakdown**: All concepts with scores
+   - **Tips**: Personalized suggestions
+
+### 4.2 Verify Analytics Data
+
+1. Practice a few concepts (click +10% buttons)
+2. Take some quizzes
+3. Open Analytics again - data should update
+
+---
+
+## Step 5: Test Achievements
+
+### 5.1 View Achievements
+
+1. In the sidebar, find **🏅 Achievements** section
+2. See 8 achievement badges
+3. Unlocked achievements are highlighted
+4. Hover for tooltips with requirements
+
+### 5.2 Unlock Achievements
+
+| Action | Achievement |
+|--------|-------------|
+| Complete first lesson | 🎯 First Steps |
+| Complete 3 quizzes | 📝 Quiz Taker |
+| Score 80%+ on any quiz | ⭐ Rising Star |
+| Master any concept (85%+) | 🏆 Master |
+| Complete all 7 concepts | 📚 Scholar |
+| 3 lessons in a row | 🔥 Streak |
+| Try all 7 concepts | 💡 Explorer |
+| 100% mastery on any concept | 👑 Perfectionist |
+
+---
+
+## Step 6: Test Quiz & Quiz History
+
+### 6.1 Take a Quiz
+
+1. Click any concept card
+2. Go to **📝 Take Quiz** tab
+3. Answer all 5 questions
+4. Submit and see results
+
+### 6.2 Review Quiz History
+
+1. After taking quizzes, find **📜 Quiz History** in the sidebar
+2. Click to see all past attempts
+3. Each entry shows:
+   - Date/time
+   - Score
+   - Concept name
+4. Click any attempt to **review answers**
+5. See which answers were correct/incorrect
+
+---
+
+## Step 7: Test Progress Export/Import
+
+### 7.1 Export Progress
+
+1. Find the **Export/Import** buttons in the sidebar (next to "Your Progress")
+2. Click **📥 Export**
+3. A JSON file downloads with your progress
+
+### 7.2 Import Progress
+
+1. Click **📤 Import**
+2. Select a previously exported JSON file
+3. Progress is restored
+
+---
+
+## Step 8: Test Notes Feature
+
+### 8.1 Add a Note
 
 1. Click any concept card to open details
 2. Scroll to "📝 Your Notes" section
@@ -155,7 +230,7 @@ Open **http://localhost:5173/** - you should see:
 4. Watch for "💾 Saving..." indicator
 5. See "✓ Saved" confirmation
 
-### 3.2 Verify Persistence
+### 8.2 Verify Persistence
 
 1. Refresh the page (F5)
 2. Click the same concept card
@@ -163,62 +238,23 @@ Open **http://localhost:5173/** - you should see:
 
 ---
 
-## Step 4: Test Lesson Page with AI Content
+## Step 9: Test Code Playground
 
-### 4.1 View Lesson
-
-1. Scroll to the Lesson section (below Dashboard)
-2. Current lesson shows with:
-   - Title and difficulty stars
-   - **🤖 AI-Generated Content** toggle
-   - Overview (AI-generated)
-
-### 4.2 Test AI Content Toggle
-
-1. Enable **"🤖 AI-Generated Content"** checkbox
-2. See loading spinner: "Generating lesson overview with AI..."
-3. Content updates with AI-generated material
-4. **"✨ AI Content Loaded"** indicator appears
-
-### 4.3 Test Lesson Tabs
-
-1. **📖 Lesson Content** - AI-generated detailed explanation + key takeaways
-2. **💻 Code Examples** - AI-generated examples
-3. **📝 Take Quiz** - 5 AI-generated questions
-
-### 4.4 Test Quiz Requirement
-
-1. Notice the **"Mark Complete"** button is **disabled** (gray)
-2. See the yellow warning: "You must pass the quiz (score ≥ 70%)..."
-3. Click **"Take Quiz →"** link or the Quiz tab
-4. Answer all 5 questions and submit
-5. If score ≥ 70%:
-   - "🎉 Passed!" message appears
-   - "Mark Complete" button becomes **enabled** (blue)
-6. If score < 70%:
-   - "📚 Keep Learning!" message appears
-   - Click "Retry Quiz" to try again
-
-### 4.5 Test Mark Complete
-
-1. After passing quiz, click **"✓ Mark Complete"** button
-2. Lesson marked as complete
-3. Dashboard refreshes automatically
-4. Next lesson appears
-
----
-
-## Step 5: Test Code Playground
-
-### 5.1 Test Walker API Mode (Recommended)
+### 9.1 Test Walker API Mode (Recommended)
 
 1. Scroll to "Code Playground" section
-2. Click **"🚀 Walker API"** button
+2. Click **"🚀 Walker API"** button (should be default)
 3. Editor shows: `get_dashboard({ user_id: "demo_user" })`
-4. Click **"▶ Run"**
+4. Click **"▶ Run (Ctrl+Enter)"**
 5. Output shows JSON with user data, concepts, scores
 
-### 5.2 Test Quick Buttons (Walker Mode)
+### 9.2 Test Keyboard Shortcut
+
+1. Click inside the editor
+2. Press **Ctrl+Enter**
+3. Code runs automatically!
+
+### 9.3 Test Quick Buttons (Walker Mode)
 
 | Button | Output |
 |--------|--------|
@@ -227,7 +263,7 @@ Open **http://localhost:5173/** - you should see:
 | Recommendations | Weakest concepts to study |
 | Static Quiz | Quiz questions (non-AI) |
 
-### 5.3 Test AI Generation Buttons
+### 9.4 Test AI Generation Buttons
 
 In Walker API mode, find the purple **"🤖 AI Generation"** section:
 
@@ -238,32 +274,79 @@ In Walker API mode, find the purple **"🤖 AI Generation"** section:
 | 📚 AI Lesson | Generate lesson content |
 | 💡 AI Concept | Generate concept description |
 
----
+### 9.5 Test Jac Code Mode
 
-## Step 6: Test Data Persistence
-
-### 6.1 Make Changes
-
-1. Practice a few concepts (click +10%)
-2. Add notes to concepts
-3. Complete a lesson (pass quiz first!)
-
-### 6.2 Verify Persistence
-
-1. Refresh the browser (F5)
-2. All scores, notes, and completed lessons should persist
-
-### 6.3 Reset Data (Optional)
-
-To start fresh, restart the backend:
-```bash
-cd backend
-python start_server.py
-```
+1. Click **"🔧 Jac Code"** button
+2. Note the warning: "⚠️ WSL: Run in terminal instead"
+3. Click **"Copy to clipboard"** to copy code
+4. Run the code in your WSL/terminal with `jac` installed
 
 ---
 
-## Step 7: API Testing (Optional)
+## Step 10: Test Offline Support
+
+### 10.1 Verify Service Worker
+
+1. Open browser DevTools (F12)
+2. Go to **Application** > **Service Workers**
+3. You should see `sw.js` registered
+
+### 10.2 Test Offline Mode
+
+1. Stop the backend server (Ctrl+C)
+2. Refresh the frontend page
+3. Static content should still load (cached)
+4. API calls will fail, but UI remains functional
+5. Start backend again to restore full functionality
+
+---
+
+## Step 11: Test Breadcrumb Navigation
+
+### 11.1 Navigate with Breadcrumbs
+
+1. Click a concept card - breadcrumb shows: `Dashboard > [Concept Name]`
+2. Click a lesson - breadcrumb shows: `Dashboard > Lessons > [Lesson Name]`
+3. Click "Dashboard" in breadcrumb to go back
+4. Breadcrumbs help you know where you are
+
+---
+
+## Step 12: Test API Caching
+
+### 12.1 Verify Cache Hits
+
+1. Open browser DevTools (F12)
+2. Go to **Console** tab
+3. Load the dashboard
+4. See log: `[Cache SET] get_dashboard`
+5. Navigate away and back
+6. See log: `[Cache HIT] get_dashboard` (faster load!)
+
+### 12.2 Cache Invalidation
+
+1. Practice a concept (+10%)
+2. See log: `[Cache INVALIDATED] demo_user`
+3. Dashboard reloads fresh data
+
+---
+
+## Step 13: Test Mobile Responsiveness
+
+### 13.1 Resize Browser
+
+1. Open DevTools (F12)
+2. Click **Toggle device toolbar** (phone icon)
+3. Select mobile device (iPhone, Galaxy, etc.)
+4. Verify:
+   - Cards stack vertically
+   - Sidebar collapses or scrolls
+   - Text remains readable
+   - Buttons are tap-friendly
+
+---
+
+## Step 14: API Testing (Optional)
 
 Test walkers directly via curl:
 
@@ -331,33 +414,67 @@ curl -X POST http://localhost:8000/walker/get_concept_dynamic \
 | `API key not valid` | Check `backend/.env` has valid `GEMINI_API_KEY` |
 | AI content not loading | Ensure `byllm` installed: `pip install byllm` |
 | `npm install` fails | Ensure Node.js 16+ (`node --version`) |
-| `jac serve` fails | Check `main.jac` for syntax errors |
+| `jac serve` fails | Check `jaclang==0.8.10` and `jac-cloud==0.2.0` |
 | "API Offline" | Ensure backend running on port 8000 |
-| Notes not saving | Restart backend |
+| Notes not saving | Check `backend/data/` directory |
 | Quiz shows 3 questions | Update code - should be 5 now |
 | "Mark Complete" disabled | Pass the quiz first (≥70%) |
+| Theme not persisting | Clear localStorage and try again |
+| Achievements not updating | Refresh the page |
 
 ---
 
 ## ✅ Test Checklist
 
+### Setup
 - [ ] Backend starts with "✓ Gemini API key detected"
+- [ ] Backend shows "💾 Database path: ..."
 - [ ] Frontend shows "API Online"
+- [ ] Service Worker registered
+
+### Dashboard
 - [ ] 7 concept cards displayed
 - [ ] AI toggle works in concept detail panel
 - [ ] AI content generates with loading indicator
 - [ ] Content tab shows AI-generated overview
 - [ ] Examples tab shows AI-generated code
+- [ ] "Try it" buttons load code in playground
+
+### Theme & UI
+- [ ] Dark/light theme toggle works
+- [ ] Theme persists after refresh
+- [ ] Mobile responsive layout works
+- [ ] Breadcrumb navigation works
+- [ ] Skeleton loading states show
+
+### Quizzes
 - [ ] Quiz generates **5 AI questions**
 - [ ] Quiz scoring works correctly
+- [ ] Mark Complete disabled until quiz passed (≥70%)
+- [ ] Mark Complete enabled after passing
+- [ ] Quiz history shows past attempts
+- [ ] Quiz review mode shows answers
+
+### Progress
 - [ ] Practice +10% updates score
 - [ ] Notes auto-save and persist
-- [ ] Lesson page shows AI-generated content
-- [ ] Mark Complete disabled until quiz passed
-- [ ] Mark Complete enabled after passing (≥70%)
-- [ ] Walker API mode works in Code Playground
+- [ ] Export progress downloads JSON
+- [ ] Import progress restores data
+- [ ] API caching shows in console logs
+
+### Code Playground
+- [ ] Walker API mode works
+- [ ] Ctrl+Enter keyboard shortcut runs code
 - [ ] AI Generation buttons work
+- [ ] Copy to clipboard works
+- [ ] Example buttons work
+
+### Achievements & Analytics
+- [ ] 8 achievement badges shown
+- [ ] Achievements unlock correctly
+- [ ] Analytics modal opens
+- [ ] Analytics shows correct stats
 
 ---
 
-**All tests passing? 🎉 The app is fully functional with AI!**
+**All tests passing? 🎉 The app is fully functional!**

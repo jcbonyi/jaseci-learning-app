@@ -17,6 +17,11 @@ This guide explains how to use Jaseci's **`by llm()`** feature with Google Gemin
 pip install byllm python-dotenv
 ```
 
+Or use the requirements file:
+```bash
+pip install -r backend/requirements.txt
+```
+
 ### 2. Get a Gemini API Key
 
 1. Go to https://aistudio.google.com/apikey
@@ -40,7 +45,8 @@ python start_server.py
 You should see:
 ```
 ✓ Gemini API key detected.
-Starting Jac backend...
+💾 Database path: C:\...\backend\data\jaseci_db
+🚀 Starting Jac server...
 ```
 
 ## How It Works
@@ -263,6 +269,55 @@ walker get_concept_dynamic {
 }
 ```
 
+## Data Persistence
+
+The backend uses **LocalDB** (SQLite-based) for persistent storage:
+
+- **Database location**: `backend/data/jaseci_db/`
+- **Persists**: User progress, mastery scores, notes, completed lessons
+- **Auto-created**: Directory created automatically on first run
+
+### Reset Data
+
+To clear all data:
+```bash
+rm -rf backend/data/
+```
+
+### Use MongoDB (Production)
+
+Set in `backend/.env`:
+```
+DATABASE_HOST=mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority
+```
+
+## Frontend Integration
+
+The frontend's `api.js` includes:
+
+### API Response Caching
+
+```javascript
+// Cacheable walkers (read-only operations)
+const CACHEABLE_WALKERS = ['get_dashboard', 'get_notes', 'recommend_next'];
+const CACHE_TTL = 60000; // 1 minute
+
+// Cache invalidation after mutations
+export function invalidateCache(pattern = '') { ... }
+```
+
+### Usage in Components
+
+```javascript
+import { getDashboard, updateMastery, invalidateCache } from '../api';
+
+// Cached request (fast if recent)
+const dashboard = await getDashboard('demo_user');
+
+// Mutation (invalidates cache automatically)
+await updateMastery('demo_user', 'Walkers', 80);
+```
+
 ## Supported LLM Providers
 
 The `byllm` package supports multiple providers via LiteLLM:
@@ -290,6 +345,7 @@ glob llm = Model(model_name="openai/gpt-4o-mini");
    ```
    .env
    *.env
+   backend/data/
    ```
 
 3. **Use `python-dotenv`** - The `start_server.py` loads keys automatically
@@ -305,6 +361,22 @@ glob llm = Model(model_name="openai/gpt-4o-mini");
 | OpenAI | gpt-4o | $5/1M input tokens |
 
 **Gemini is recommended** for this app as it's free and fast!
+
+## Version Requirements
+
+For compatibility, use these exact versions:
+
+```txt
+jaclang==0.8.10
+jac-cloud==0.2.0
+byllm>=0.4.0
+python-dotenv>=1.0.0
+```
+
+Install from `requirements.txt`:
+```bash
+pip install -r backend/requirements.txt
+```
 
 ## Troubleshooting
 
@@ -334,6 +406,13 @@ pip install byllm
 
 This was fixed by using unified `ConceptContent` and `LessonContent` objects that return all fields in a single AI call.
 
+### Walker endpoints not found (404)
+
+Ensure you're using compatible versions:
+```bash
+pip install jaclang==0.8.10 jac-cloud==0.2.0
+```
+
 ## Related Resources
 
 - [Jaseci Documentation](https://docs.jaseci.org/)
@@ -343,4 +422,4 @@ This was fixed by using unified `ConceptContent` and `LessonContent` objects tha
 
 ---
 
-*Last updated: November 2025*
+*Last updated: December 2025*

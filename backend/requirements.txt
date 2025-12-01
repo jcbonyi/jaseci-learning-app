@@ -1,0 +1,13 @@
+# Jac Language & Cloud - PINNED VERSIONS (critical for walker endpoints)
+jaclang==0.8.10
+jac-cloud==0.2.0
+
+# AI/LLM Integration
+byllm>=0.4.0
+
+# Environment & Server
+python-dotenv>=1.0.0
+
+# Note: These versions are tested and work together.
+# Upgrading jaclang/jac-cloud may break walker HTTP endpoint registration.
+

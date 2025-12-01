@@ -1,6 +1,12 @@
 import React, {useEffect, useState, useRef, useCallback} from 'react'
 import ConceptCard from './ConceptCard'
 import SkillMap from './SkillMap'
+import Achievements from './Achievements'
+import ProgressManager from './ProgressManager'
+import Breadcrumb from './Breadcrumb'
+import QuizHistory, { saveQuizToHistory } from './QuizHistory'
+import Analytics from './Analytics'
+import { TryInPlaygroundButton } from './CodeContext'
 import { getDashboard, recommendNext, updateMastery, generateQuiz, saveNote, getNotes, getConceptDynamic } from '../api'
 
 export default function Dashboard({userId, onConceptSelect, refreshKey}) {
@@ -248,6 +254,14 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
         setQuizScore(score)
         setQuizSubmitted(true)
         
+        // Save to quiz history for review
+        saveQuizToHistory(userId, {
+            concept: selectedConcept.name,
+            score,
+            questions: quizData.questions,
+            answers: quizAnswers
+        })
+        
         // Update mastery based on quiz score
         if (score >= 70) {
             const newScore = Math.max(selectedConcept.score || 0, score)
@@ -281,10 +295,25 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
     }
 
     return (
-        <div className="p-6 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="p-4 sm:p-6 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-bold text-white mb-4">Progress Dashboard</h2>
+                    {/* Breadcrumb Navigation */}
+                    <Breadcrumb 
+                        items={[
+                            { label: 'Dashboard', icon: '🏠', onClick: selectedConcept ? () => setSelectedConcept(null) : null },
+                            ...(selectedConcept ? [{ 
+                                label: selectedConcept.name, 
+                                icon: '📚' 
+                            }] : []),
+                            ...(selectedConcept && activeTab === 'quiz' ? [{ 
+                                label: 'Quiz', 
+                                icon: '📝' 
+                            }] : [])
+                        ]}
+                    />
+
+                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">📊 Progress Dashboard</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {conceptKeys.map((k, idx) => (
                             <ConceptCard 
@@ -515,12 +544,15 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                                     ) : (dynamicConcept?.examples || selectedConcept.examples)?.length > 0 ? (
                                         (dynamicConcept?.examples || selectedConcept.examples).map((ex, i) => (
                                             <div key={i} className="p-4 bg-gray-800 rounded-lg">
-                                                <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
-                                                    Example {i + 1}: {ex.title}
-                                                    {dynamicConcept?.generated_by === 'AI' && (
-                                                        <span className="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">AI</span>
-                                                    )}
-                                                </h4>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="text-sm font-semibold text-green-400 flex items-center gap-2">
+                                                        Example {i + 1}: {ex.title}
+                                                        {dynamicConcept?.generated_by === 'AI' && (
+                                                            <span className="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">AI</span>
+                                                        )}
+                                                    </h4>
+                                                    <TryInPlaygroundButton code={ex.code} />
+                                                </div>
                                                 <pre className="bg-gray-900 p-3 rounded text-sm text-gray-300 overflow-x-auto font-mono whitespace-pre-wrap">
                                                     {ex.code}
                                                 </pre>
@@ -708,10 +740,43 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                 </div>
 
                 {/* Sidebar */}
-                <div className="lg:col-span-1">
-                    <h3 className="font-semibold text-white mb-3">Skill Map</h3>
-                <SkillMap concepts={data.concepts} />
-                <div className="mt-6">
+                <div className="lg:col-span-1 space-y-6">
+                    {/* Progress Manager */}
+                    <div className="flex justify-between items-center flex-wrap gap-2">
+                        <h3 className="font-semibold text-white">Your Progress</h3>
+                        <div className="flex gap-2">
+                            <Analytics userId={userId} dashboardData={data} />
+                            <ProgressManager 
+                                data={data} 
+                                userId={userId}
+                                onImport={async (importData) => {
+                                    // Merge imported progress
+                                    console.log('Importing progress:', importData)
+                                    // Reload dashboard to reflect any changes
+                                    await load()
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Achievements */}
+                    <Achievements data={data} />
+
+                    {/* Skill Map */}
+                    <div>
+                        <h3 className="font-semibold text-white mb-3">Skill Map</h3>
+                        <SkillMap concepts={data.concepts} />
+                    </div>
+                    {/* Quiz History */}
+                    <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                        <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                            📋 Quiz History
+                        </h3>
+                        <QuizHistory userId={userId} />
+                    </div>
+
+                    {/* Recommendations */}
+                    <div>
                         <h4 className="font-semibold text-white mb-2">Recommended Next</h4>
                         <div className="text-sm text-gray-300">
                             {recs && recs.recommendations && recs.recommendations.length > 0 ? (

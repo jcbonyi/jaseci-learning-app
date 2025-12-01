@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
-import { spawn, jacSpawn } from '../api'
+import { spawn } from '../api'
+import { useCode } from './CodeContext'
 
 export default function CodeEditor({value = "// write Spawn('walker', { args }) calls here", language = 'javascript', onChange}) {
     const editorRef = useRef(null)
@@ -8,11 +9,27 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
     const [runAsUser, setRunAsUser] = useState('demo_user')
     const [loading, setLoading] = useState(false)
     const [editorReady, setEditorReady] = useState(false)
-    const [mode, setMode] = useState('jac') // 'jac' for Jac code, 'walker' for walker API calls
+    const [mode, setMode] = useState('walker') // Default to 'walker' mode since it works without WSL setup
+    
+    // Listen for code from other components (e.g., "Try in Playground" buttons)
+    const { codeToTry, clearCode } = useCode()
+    
+    useEffect(() => {
+        if (codeToTry && editorRef.current) {
+            editorRef.current.setValue(codeToTry)
+            setMode('jac') // Switch to Jac mode for code examples
+            clearCode()
+        }
+    }, [codeToTry, clearCode])
 
     function handleEditorDidMount(editor, monaco) { 
         editorRef.current = editor
         setEditorReady(true)
+        
+        // Add keyboard shortcut: Ctrl+Enter to run
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+            document.getElementById('run-code-btn')?.click()
+        })
     }
 
     // Run actual Jac code via the /api/run-jac endpoint
@@ -69,25 +86,6 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                 return { walker, args: argsObj, format: 'spawn' }
             } catch (e) {
                 return { walker, argsRaw: argsBracket, parseError: String(e), format: 'spawn' }
-            }
-        }
-
-        // Try jacSpawn format: jacSpawn('walker', 'nodeId', { args })
-        const jacSpawnRegex = /jacSpawn\s*\(\s*['"]([a-zA-Z0-9_\-]+)['"]\s*,\s*['"]([^'"]*)['"]\s*,\s*(\{[\s\S]*?\})\s*\)/
-        m = cleanCode.match(jacSpawnRegex)
-        if (m) {
-            const walker = m[1]
-            const nodeId = m[2]
-            const argsBracket = m[3]
-            try {
-                let normalized = argsBracket
-                    .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
-                    .replace(/'/g, '"')
-                const argsObj = JSON.parse(normalized)
-                console.log('Parsed jacSpawn format:', walker, nodeId, argsObj)
-                return { walker, nodeId, args: argsObj, format: 'jacSpawn' }
-            } catch (e) {
-                return { walker, nodeId, argsRaw: argsBracket, parseError: String(e), format: 'jacSpawn' }
             }
         }
 
@@ -165,12 +163,7 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                     args.user_id = runAsUser
                 }
                 
-                let res
-                if (parsed.format === 'jacSpawn') {
-                    res = await jacSpawn(parsed.walker, parsed.nodeId || '', args)
-                } else {
-                    res = await spawn(parsed.walker, args)
-                }
+                const res = await spawn(parsed.walker, args)
                 setOutput(res)
             }
         } catch (e) {
@@ -215,10 +208,13 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
                     🚀 Walker API
                 </button>
                 {mode === 'jac' && (
-                    <span className="text-xs text-yellow-400 ml-2">
-                        ⚠️ Requires jac in PATH
+                    <span className="text-xs text-yellow-400 ml-2" title="Jac Code mode requires 'jac' CLI in your system PATH. For WSL users, run jac code directly in terminal instead.">
+                        ⚠️ WSL: Run in terminal instead
                     </span>
                 )}
+                <span className="text-xs text-gray-500 ml-auto">
+                    Ctrl+Enter to run
+                </span>
             </div>
 
             <div className="border border-gray-600 rounded overflow-hidden">
@@ -240,6 +236,7 @@ export default function CodeEditor({value = "// write Spawn('walker', { args }) 
             </div>
             <div className="mt-3 flex gap-3 items-center flex-wrap">
                 <button 
+                    id="run-code-btn"
                     className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded font-medium disabled:opacity-50 transition-colors" 
                     onClick={run}
                     disabled={loading || !editorReady}

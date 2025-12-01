@@ -5,6 +5,57 @@
 // In development with Vite proxy, use relative URL; otherwise use full URL
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+// ============================================
+// API Response Cache
+// ============================================
+const cache = new Map();
+const CACHE_TTL = 60000; // 1 minute cache TTL
+const CACHEABLE_WALKERS = ['get_dashboard', 'get_notes', 'recommend_next']; // Walkers safe to cache
+
+function getCacheKey(walkerName, args) {
+    return `${walkerName}:${JSON.stringify(args)}`;
+}
+
+function getCached(walkerName, args) {
+    if (!CACHEABLE_WALKERS.includes(walkerName)) return null;
+    
+    const key = getCacheKey(walkerName, args);
+    const entry = cache.get(key);
+    
+    if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+        console.log(`[Cache HIT] ${walkerName}`);
+        return entry.data;
+    }
+    
+    if (entry) {
+        cache.delete(key); // Expired
+    }
+    return null;
+}
+
+function setCache(walkerName, args, data) {
+    if (!CACHEABLE_WALKERS.includes(walkerName)) return;
+    if (data.error) return; // Don't cache errors
+    
+    const key = getCacheKey(walkerName, args);
+    cache.set(key, { data, timestamp: Date.now() });
+    console.log(`[Cache SET] ${walkerName}`);
+}
+
+// Invalidate cache for a user (call after mutations)
+export function invalidateCache(pattern = '') {
+    if (pattern) {
+        for (const key of cache.keys()) {
+            if (key.includes(pattern)) {
+                cache.delete(key);
+            }
+        }
+    } else {
+        cache.clear();
+    }
+    console.log(`[Cache INVALIDATED] ${pattern || 'all'}`);
+}
+
 /**
  * Call a Jac walker via the HTTP API (jaclang 0.8+ format)
  * @param {string} walkerName - Name of the walker to call
@@ -31,6 +82,10 @@ export function setToken(token) {
 }
 
 export async function callWalker(walkerName, args = {}, nodeId = '') {
+    // Check cache first
+    const cached = getCached(walkerName, args);
+    if (cached) return cached;
+    
     try {
         // Build headers and include Authorization if token present
         const headers = { 'Content-Type': 'application/json' };
@@ -55,12 +110,17 @@ export async function callWalker(walkerName, args = {}, nodeId = '') {
         console.log(`Walker ${walkerName} raw response:`, data);
 
         // jaclang returns in 'result' or includes 'error'
-        if (data.error) return { error: data.error };
-        if (data.result) return data.result;
-        if (data.returns && data.returns.length > 0) return data.returns[0];
-        if (data.reports && data.reports.length > 0) return data.reports[0];
+        let result;
+        if (data.error) result = { error: data.error };
+        else if (data.result) result = data.result;
+        else if (data.returns && data.returns.length > 0) result = data.returns[0];
+        else if (data.reports && data.reports.length > 0) result = data.reports[0];
+        else result = data;
 
-        return data;
+        // Cache the result
+        setCache(walkerName, args, result);
+        
+        return result;
     } catch (error) {
         console.error(`Error calling walker ${walkerName}:`, error);
         return { error: String(error) };
@@ -68,18 +128,10 @@ export async function callWalker(walkerName, args = {}, nodeId = '') {
 }
 
 /**
- * Spawn a walker - alias for callWalker for compatibility
- * Matches the jacSpawn pattern from jac-client
+ * Spawn a walker - alias for callWalker
  */
 export async function spawn(walkerName, args = {}) {
     return await callWalker(walkerName, args);
-}
-
-/**
- * Alternative spawn format matching jac-client's jacSpawn(walker, nodeId, args)
- */
-export async function jacSpawn(walkerName, nodeId = '', args = {}) {
-    return await callWalker(walkerName, args, nodeId);
 }
 
 // ============================================
@@ -103,11 +155,13 @@ export async function getNextLesson(userId) {
 
 // Record lesson completion progress
 export async function recordLessonProgress(userId, lessonTitle, completed) {
-    return await callWalker('record_lesson_progress', {
+    const result = await callWalker('record_lesson_progress', {
         user_id: userId,
         lesson_title: lessonTitle,
         completed: completed
     });
+    invalidateCache(userId); // Clear cache after mutation
+    return result;
 }
 
 // Get user dashboard with all concept scores
@@ -130,11 +184,13 @@ export async function evaluateAnswer(quizId, answers) {
 
 // Update mastery score for a concept
 export async function updateMastery(userId, conceptName, score) {
-    return await callWalker('update_mastery', {
+    const result = await callWalker('update_mastery', {
         user_id: userId,
         concept_name: conceptName,
         score: score
     });
+    invalidateCache(userId); // Clear cache after mutation
+    return result;
 }
 
 // Get recommended next concepts to study
