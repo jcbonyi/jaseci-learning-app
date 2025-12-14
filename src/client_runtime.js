@@ -1,6 +1,8 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { HashRouter as ReactRouterHashRouter, Routes as ReactRouterRoutes, Route as ReactRouterRoute, Link as ReactRouterLink, Navigate as ReactRouterNavigate, useNavigate as reactRouterUseNavigate, useLocation as reactRouterUseLocation, useParams as reactRouterUseParams } from "react-router-dom";
+// Import jac-client (Vite handles CommonJS to ES module conversion)
+import jacClient from 'jac-client';
 function __jacJsx(tag, props, children) {
   if (tag === null) {
     tag = React.Fragment;
@@ -46,70 +48,60 @@ function useRouter() {
 function navigate(path) {
   window.location.hash = "#" + path;
 }
+
 async function __jacSpawn(left, right, fields) {
-  let token = __getLocalStorage("jac_token");
-  let url = `/walker/${left}`;
+  // Custom implementation to avoid 'nd' parameter that jac-client adds
+  // If right is provided, it's a nested walker call
+  let walkerName = left;
   if (right !== "") {
-    url = `/walker/${left}/${right}`;
+    walkerName = `${left}/${right}`;
   }
-  let response = await fetch(url, {"method": "POST", "accept": "application/json", "headers": {"Content-Type": "application/json", "Authorization": token ? `Bearer ${token}` : ""}, "body": JSON.stringify(fields)});
+  
+  let token = __getLocalStorage("jac_token");
+  let url = `/walker/${walkerName}`;
+  let response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": token ? `Bearer ${token}` : ""
+    },
+    // Don't include 'nd' parameter - walkers don't expect it
+    body: JSON.stringify(fields)
+  });
+  
   if (!response.ok) {
-    let error_text = await response.json();
-    throw new Error(`Walker ${walker} failed: ${error_text}`);
+    let error_text = await response.text();
+    try {
+      let error_json = JSON.parse(error_text);
+      throw new Error(`Walker ${walkerName} failed: ${error_json.error || error_json.message || error_text}`);
+    } catch {
+      throw new Error(`Walker ${walkerName} failed: ${error_text}`);
+    }
   }
   return await response.json();
 }
 function jacSpawn(left, right, fields) {
   return __jacSpawn(left, right, fields);
 }
+// Use jac-client functions directly
 async function __jacCallFunction(function_name, args) {
-  let token = __getLocalStorage("jac_token");
-  let response = await fetch(`/function/${function_name}`, {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": token ? `Bearer ${token}` : ""}, "body": JSON.stringify({"args": args})});
-  if (!response.ok) {
-    let error_text = await response.text();
-    throw new Error(`Function ${function_name} failed: ${error_text}`);
-  }
-  let data = JSON.parse(await response.text());
-  return data["result"];
+  return await jacClient.jacCallFunction(function_name, args);
 }
+
 async function jacSignup(username, password) {
-  let response = await fetch("/user/create", {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": JSON.stringify({"username": username, "password": password})});
-  if (response.ok) {
-    let data = JSON.parse(await response.text());
-    let token = data["token"];
-    if (token) {
-      __setLocalStorage("jac_token", token);
-      return {"success": true, "token": token, "username": username};
-    }
-    return {"success": false, "error": "No token received"};
-  } else {
-    let error_text = await response.text();
-    try {
-      let error_data = JSON.parse(error_text);
-      return {"success": false, "error": error_data["error"] !== null ? error_data["error"] : "Signup failed"};
-    } catch {
-      return {"success": false, "error": error_text};
-    }
-  }
+  return await jacClient.jacSignup(username, password);
 }
+
 async function jacLogin(username, password) {
-  let response = await fetch("/user/login", {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": JSON.stringify({"username": username, "password": password})});
-  if (response.ok) {
-    let data = JSON.parse(await response.text());
-    let token = data["token"];
-    if (token) {
-      __setLocalStorage("jac_token", token);
-      return true;
-    }
-  }
-  return false;
+  return await jacClient.jacLogin(username, password);
 }
+
 function jacLogout() {
-  __removeLocalStorage("jac_token");
+  jacClient.jacLogout();
 }
+
 function jacIsLoggedIn() {
-  let token = __getLocalStorage("jac_token");
-  return token !== null && token !== "";
+  return jacClient.jacIsLoggedIn();
 }
 function __getLocalStorage(key) {
   let storage = globalThis.localStorage;

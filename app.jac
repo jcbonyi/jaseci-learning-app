@@ -4,6 +4,7 @@
 
 # ============ byLLM AI Features ============
 # Requires: GEMINI_API_KEY environment variable
+# Note: AI is disabled by default (use_ai = False) to avoid quota issues
 
 import from byllm.lib { Model }
 
@@ -62,6 +63,26 @@ walker create_user {
     can create with `root entry {
         # Initialize concepts if not present (always do this first)
         existing_concepts = [-->(`?concept)];
+        existing_lessons = [-->(`?lesson)];
+        
+        # Check if jac-client concept exists
+        jac_client_concept_exists = False;
+        for c in existing_concepts {
+            if c.name == "jac-client" {
+                jac_client_concept_exists = True;
+                break;
+            }
+        }
+        
+        # Check if jac-client lesson exists
+        jac_client_lesson_exists = False;
+        for l in existing_lessons {
+            if l.title == "jac-client Integration" {
+                jac_client_lesson_exists = True;
+                break;
+            }
+        }
+        
         if len(existing_concepts) == 0 {
             # Create core concept nodes with detailed content and examples
             c_syntax = concept(
@@ -141,6 +162,18 @@ walker create_user {
                 ],
                 difficulty=3, required_score=75, mastery_score=92, order=7
             );
+            c_jac_client = concept(
+                name="jac-client", 
+                description="Using jac-client npm package for frontend integration",
+                detailed_content="jac-client is an npm package that provides utility functions for integrating Jac applications with frontend JavaScript/React applications. It handles walker spawning, authentication, and API communication. Key functions include jacSpawn (call walkers), jacSignup, jacLogin, jacLogout, and jacIsLoggedIn for authentication. The package manages tokens automatically and provides a clean API for frontend-backend communication. Install with 'npm install jac-client' and import functions as needed.",
+                examples=[
+                    {"title": "Install and Import", "code": "# Install jac-client\nnpm install jac-client\n\n# Import functions\nimport { jacSpawn, jacLogin, jacSignup } from 'jac-client';"},
+                    {"title": "Call a Walker", "code": "// Call a walker from frontend\nconst result = await jacSpawn('get_dashboard', {\n    user_id: 'demo_user'\n});\n\nconsole.log(result);"},
+                    {"title": "Authentication", "code": "// Sign up a new user\nawait jacSignup('username', 'password');\n\n// Login\nawait jacLogin('username', 'password');\n\n// Check if logged in\nconst isLoggedIn = jacIsLoggedIn();\n\n// Logout\njacLogout();"},
+                    {"title": "Error Handling", "code": "try {\n    const data = await jacSpawn('walker_name', { arg: 'value' });\n    // Handle success\n} catch (error) {\n    console.error('Walker call failed:', error);\n}"}
+                ],
+                difficulty=2, required_score=70, mastery_score=88, order=8
+            );
 
             # Attach concepts to root
             here ++> c_syntax;
@@ -150,6 +183,7 @@ walker create_user {
             here ++> c_osp;
             here ++> c_byLLM;
             here ++> c_agents;
+            here ++> c_jac_client;
 
             # Create sample lessons with content and concepts
             l1 = lesson(
@@ -187,6 +221,13 @@ walker create_user {
                 difficulty=3, 
                 unlocked=False
             );
+            l6 = lesson(
+                title="jac-client Integration", 
+                content="Learn how to use jac-client npm package to integrate Jac backend walkers with frontend JavaScript/React applications. jac-client provides jacSpawn for calling walkers, jacSignup/jacLogin/jacLogout for authentication, and automatic token management. Install with 'npm install jac-client' and import the functions you need. The package handles API communication, error handling, and token storage automatically.", 
+                concepts=["jac-client"],
+                difficulty=2, 
+                unlocked=True
+            );
 
             # Attach lessons to root
             here ++> l1;
@@ -194,6 +235,35 @@ walker create_user {
             here ++> l3;
             here ++> l4;
             here ++> l5;
+            here ++> l6;
+        }
+        
+        # Always ensure jac-client concept and lesson exist (for existing users)
+        if not jac_client_concept_exists {
+            c_jac_client_new = concept(
+                name="jac-client", 
+                description="Using jac-client npm package for frontend integration",
+                detailed_content="jac-client is an npm package that provides utility functions for integrating Jac applications with frontend JavaScript/React applications. It handles walker spawning, authentication, and API communication. Key functions include jacSpawn (call walkers), jacSignup, jacLogin, jacLogout, and jacIsLoggedIn for authentication. The package manages tokens automatically and provides a clean API for frontend-backend communication. Install with 'npm install jac-client' and import functions as needed.",
+                examples=[
+                    {"title": "Install and Import", "code": "# Install jac-client\nnpm install jac-client\n\n# Import functions\nimport { jacSpawn, jacLogin, jacSignup } from 'jac-client';"},
+                    {"title": "Call a Walker", "code": "// Call a walker from frontend\nconst result = await jacSpawn('get_dashboard', {\n    user_id: 'demo_user'\n});\n\nconsole.log(result);"},
+                    {"title": "Authentication", "code": "// Sign up a new user\nawait jacSignup('username', 'password');\n\n// Login\nawait jacLogin('username', 'password');\n\n// Check if logged in\nconst isLoggedIn = jacIsLoggedIn();\n\n// Logout\njacLogout();"},
+                    {"title": "Error Handling", "code": "try {\n    const data = await jacSpawn('walker_name', { arg: 'value' });\n    // Handle success\n} catch (error) {\n    console.error('Walker call failed:', error);\n}"}
+                ],
+                difficulty=2, required_score=70, mastery_score=88, order=8
+            );
+            here ++> c_jac_client_new;
+        }
+        
+        if not jac_client_lesson_exists {
+            l6_new = lesson(
+                title="jac-client Integration", 
+                content="Learn how to use jac-client npm package to integrate Jac backend walkers with frontend JavaScript/React applications. jac-client provides jacSpawn for calling walkers, jacSignup/jacLogin/jacLogout for authentication, and automatic token management. Install with 'npm install jac-client' and import the functions you need. The package handles API communication, error handling, and token storage automatically.", 
+                concepts=["jac-client"],
+                difficulty=2, 
+                unlocked=True
+            );
+            here ++> l6_new;
         }
 
         # Check if user already exists
@@ -457,12 +527,13 @@ walker recommend_next {
 
 walker generate_quiz {
     has concept_name: str;
-    has use_ai: bool = True;
+    has use_ai: bool = False;  # Default to False to avoid API quota issues
 
     can generate with `root entry {
         print("📝 Generating quiz for:", self.concept_name, "| AI mode:", self.use_ai);
         
         questions = [];
+        ai_success = False;
         
         if self.use_ai {
             # Find the concept to get its details for better context
@@ -494,20 +565,78 @@ walker generate_quiz {
             }
             
             # Use AI to generate questions dynamically with enhanced context
+            # Note: AI is disabled by default (use_ai = False) to avoid quota issues
+            # If AI fails, we'll use fallback questions below
             ai_questions = generate_quiz_questions(topic_description, 5);
-            for q in ai_questions {
-                questions.append({
-                    "q": q.q,
-                    "type": "multiple",
-                    "options": q.options,
-                    "answer": q.answer
-                });
+            if ai_questions and len(ai_questions) > 0 {
+                for q in ai_questions {
+                    # Validate question structure
+                    if "q" in q and "options" in q and "answer" in q {
+                        questions.append({
+                            "q": q.q,
+                            "type": "multiple",
+                            "options": q.options,
+                            "answer": q.answer
+                        });
+                    }
+                }
+                if len(questions) > 0 {
+                    ai_success = True;
+                    print("✅ AI generated", len(questions), "questions");
+                } else {
+                    print("⚠️ AI returned invalid questions, using fallback");
+                }
+            } else {
+                print("⚠️ AI returned no questions, using fallback");
             }
-        } else {
-            # Fallback static questions
-            questions = [
-                {"q": "What is " + self.concept_name + " in Jac?", "options": ["A concept", "A feature", "A pattern", "All of the above"], "answer": "All of the above", "type": "multiple"}
-            ];
+        }
+        
+        # Fallback to static questions if AI failed or use_ai is False
+        if len(questions) == 0 {
+            print("📝 Using fallback static questions for:", self.concept_name);
+            # Generate concept-specific fallback questions
+            if self.concept_name == "Jac syntax" {
+                questions = [
+                    {"q": "What keyword is used to declare variables in Jac?", "options": ["var", "let", "has", "def"], "answer": "has", "type": "multiple"},
+                    {"q": "Jac uses which syntax for code blocks?", "options": ["Indentation", "Curly braces", "Parentheses", "Square brackets"], "answer": "Curly braces", "type": "multiple"},
+                    {"q": "Statements in Jac end with:", "options": ["Period", "Semicolon", "Comma", "Nothing"], "answer": "Semicolon", "type": "multiple"},
+                    {"q": "Jac is based on which programming language?", "options": ["Python", "JavaScript", "Java", "C++"], "answer": "Python", "type": "multiple"},
+                    {"q": "What is the main data structure in Jac?", "options": ["Arrays", "Graphs", "Lists", "Dictionaries"], "answer": "Graphs", "type": "multiple"}
+                ];
+            } elif self.concept_name == "Nodes & edges" {
+                questions = [
+                    {"q": "What operator creates an edge between nodes in Jac?", "options": ["++>", "-->", "+>", ">>"], "answer": "++>", "type": "multiple"},
+                    {"q": "Nodes in Jac are defined with which keyword?", "options": ["class", "node", "object", "struct"], "answer": "node", "type": "multiple"},
+                    {"q": "To access connected nodes, you use:", "options": ["[-->]", "[++>]", "[->]", "[>>]"], "answer": "[-->]", "type": "multiple"},
+                    {"q": "Edges in Jac represent:", "options": ["Functions", "Relationships", "Variables", "Methods"], "answer": "Relationships", "type": "multiple"},
+                    {"q": "What does 'here ++> node' do?", "options": ["Creates an edge", "Calls a function", "Defines a variable", "Returns a value"], "answer": "Creates an edge", "type": "multiple"}
+                ];
+            } elif self.concept_name == "Walkers" {
+                questions = [
+                    {"q": "What keyword stops a walker's traversal?", "options": ["stop", "disengage", "exit", "return"], "answer": "disengage", "type": "multiple"},
+                    {"q": "How do you spawn a walker in Jac?", "options": ["walker()", "spawn walker with node entry", "call walker()", "walker.spawn()"], "answer": "spawn walker with node entry", "type": "multiple"},
+                    {"q": "What does 'visit [-->]' do?", "options": ["Calls a function", "Visits connected nodes", "Returns a value", "Stops execution"], "answer": "Visits connected nodes", "type": "multiple"},
+                    {"q": "What keyword refers to the current node in a walker?", "options": ["this", "here", "current", "node"], "answer": "here", "type": "multiple"},
+                    {"q": "Walkers are defined with which keyword?", "options": ["function", "def", "walker", "class"], "answer": "walker", "type": "multiple"}
+                ];
+            } elif self.concept_name == "jac-client" {
+                questions = [
+                    {"q": "How do you install jac-client?", "options": ["pip install jac-client", "npm install jac-client", "yarn add jac-client", "Both npm and yarn work"], "answer": "Both npm and yarn work", "type": "multiple"},
+                    {"q": "What function is used to call a walker from the frontend?", "options": ["jacCall", "jacSpawn", "callWalker", "spawnWalker"], "answer": "jacSpawn", "type": "multiple"},
+                    {"q": "Which jac-client function handles user authentication login?", "options": ["jacAuth", "jacLogin", "jacSignIn", "jacAuthenticate"], "answer": "jacLogin", "type": "multiple"},
+                    {"q": "What does jac-client automatically manage?", "options": ["API tokens", "Database connections", "File uploads", "WebSocket connections"], "answer": "API tokens", "type": "multiple"},
+                    {"q": "How do you check if a user is logged in with jac-client?", "options": ["jacCheckAuth()", "jacIsLoggedIn()", "jacGetUser()", "jacAuthStatus()"], "answer": "jacIsLoggedIn()", "type": "multiple"}
+                ];
+            } else {
+                # Generic fallback questions
+                questions = [
+                    {"q": "What is " + self.concept_name + " in Jac?", "options": ["A core concept in Jac programming", "A graph-based programming feature", "A unique Jac language feature", "All of the above"], "answer": "All of the above", "type": "multiple"},
+                    {"q": "In Jac, " + self.concept_name + " is used for:", "options": ["Graph traversal", "Data storage", "Code execution", "All of the above"], "answer": "All of the above", "type": "multiple"},
+                    {"q": "Which keyword is commonly used with " + self.concept_name + " in Jac?", "options": ["def", "class", "has", "function"], "answer": "has", "type": "multiple"},
+                    {"q": self.concept_name + " in Jac is part of:", "options": ["Graph-based programming", "Object-oriented programming", "Functional programming", "Procedural programming"], "answer": "Graph-based programming", "type": "multiple"},
+                    {"q": "To work with " + self.concept_name + " in Jac, you use:", "options": ["Nodes and edges", "Classes and objects", "Functions and variables", "Modules and packages"], "answer": "Nodes and edges", "type": "multiple"}
+                ];
+            }
         }
         
         q = quiz(
@@ -516,7 +645,9 @@ walker generate_quiz {
             passing_score=70
         );
         here ++> q;
-        report {"quiz_id": str(id(q)), "concept": self.concept_name, "questions": questions, "passing_score": 70, "generated_by": "AI" if self.use_ai else "static"};
+        generated_by = "AI" if ai_success else "static";
+        print("✅ Quiz generated with", len(questions), "questions | Method:", generated_by);
+        report {"quiz_id": str(id(q)), "concept": self.concept_name, "questions": questions, "passing_score": 70, "generated_by": generated_by};
     }
 }
 

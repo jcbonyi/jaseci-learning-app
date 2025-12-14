@@ -40,3 +40,6 @@ Thumbs.db
 # Temp files
 *.tmp
 *.temp
+
+# Presentation files (not pushed to GitHub)
+PRESENTATION.md

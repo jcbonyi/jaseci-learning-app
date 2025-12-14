@@ -1,5 +1,5 @@
 // api.js - wrapper for calling Jac walkers via HTTP API
-// Self-contained version for app.jac (no frontend folder dependency)
+// Custom implementation to avoid 'nd' parameter that jac-client adds
 
 // API base URL - use relative path when served by jac serve
 const API_BASE = '';
@@ -53,8 +53,10 @@ export function invalidateCache(pattern = '') {
 }
 
 // Call a Jac walker via HTTP API
+// Custom implementation to avoid 'nd' parameter that jac-client adds
 async function jacSpawn(walker, fields = {}) {
     const url = API_BASE ? `${API_BASE}/walker/${walker}` : `/walker/${walker}`;
+    // Use jac-client's token management
     const token = localStorage.getItem('jac_token') || '';
     
     const response = await fetch(url, {
@@ -63,6 +65,7 @@ async function jacSpawn(walker, fields = {}) {
             'Content-Type': 'application/json',
             'Authorization': token ? `Bearer ${token}` : ''
         },
+        // Don't include 'nd' parameter - walkers don't expect it
         body: JSON.stringify(fields)
     });
 
