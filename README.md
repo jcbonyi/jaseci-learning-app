@@ -12,7 +12,7 @@ An adaptive learning platform built with Jac backend and React frontend for teac
 - Toggle between AI and static content
 
 ### 📊 Progress Dashboard
-- View all 8 Jac concepts with progress bars and mastery indicators
+- View all 7 Jac concepts with progress bars and mastery indicators
 - Click any concept card to see AI-generated explanations and examples
 - Skill map visualization showing your learning progress
 - Personalized recommendations for next concepts to study
@@ -49,9 +49,9 @@ An adaptive learning platform built with Jac backend and React frontend for teac
   | 📝 | Quiz Taker | Complete 3 quizzes |
   | ⭐ | Rising Star | Score 80%+ on any quiz |
   | 🏆 | Master | Master any concept (85%+) |
-  | 📚 | Scholar | Complete all 8 concepts |
+  | 📚 | Scholar | Complete all 7 concepts |
   | 🔥 | Streak | 3 lessons in a row |
-  | 💡 | Explorer | Try all 8 concepts |
+  | 💡 | Explorer | Try all 7 concepts |
   | 👑 | Perfectionist | 100% mastery on any concept |
 - Track your accomplishments in the sidebar
 
@@ -87,32 +87,27 @@ An adaptive learning platform built with Jac backend and React frontend for teac
 JASECI_APP_FINAL/
 ├── app.jac                   # All-in-one: backend walkers + frontend code
 ├── src/                      # React components and API code
-│   ├── components/           # React components
-│   │   ├── Dashboard.jsx    # Main dashboard with concept cards
-│   │   ├── ConceptCard.jsx  # Individual concept display
-│   │   ├── LessonPage.jsx   # Lesson content with tabs
-│   │   ├── QuizPage.jsx     # Quiz interface
-│   │   ├── CodeEditor.jsx   # Code playground
-│   │   ├── SkillMap.jsx     # Progress visualization
-│   │   ├── Achievements.jsx # Achievement badges system
-│   │   ├── QuizHistory.jsx  # Quiz review mode
-│   │   ├── ProgressManager.jsx # Export/import progress
-│   │   ├── ThemeProvider.jsx # Dark/light theme toggle
-│   │   ├── Breadcrumb.jsx   # Navigation breadcrumbs
-│   │   ├── CodeContext.jsx  # "Try it" buttons
-│   │   └── Analytics.jsx    # Learning analytics dashboard
-│   ├── api.js                # API client with caching
-│   ├── client_runtime.js    # Jac client runtime utilities
-│   ├── main.jsx             # Entry point
-│   └── styles.css           # Styles
-├── backend/                  # Backend utilities (optional)
-│   ├── README_BYLLM.md      # AI/LLM integration guide
-│   └── requirements.txt     # Python dependencies
-├── package.json             # npm dependencies and scripts
-├── vite.config.js           # Vite config with API proxy
-├── README.md                # This file
-├── QUICK_START.md           # Quick start guide
-└── .gitignore               # Ignores node_modules, .env, data/
+│   ├── components/          # React components
+│   │   ├── Dashboard.jsx   # Main dashboard with concept cards
+│   │   ├── ConceptCard.jsx # Individual concept display
+│   │   ├── LessonPage.jsx  # Lesson content with tabs
+│   │   ├── QuizPage.jsx    # Quiz interface
+│   │   ├── CodeEditor.jsx  # Code playground
+│   │   └── ...             # Other components
+│   ├── api.js              # API client with jac-client integration
+│   ├── client_runtime.js   # Jac client runtime utilities
+│   ├── app.js              # Main React app component
+│   ├── main.jsx            # Entry point
+│   └── styles.css          # Styles
+├── backend/
+│   ├── requirements.txt    # Python dependencies
+│   └── README_BYLLM.md     # AI/LLM integration guide
+├── package.json            # npm dependencies (jac-client, React, etc.)
+├── vite.config.js          # Vite config with API proxy
+├── index.html              # HTML entry point
+├── README.md               # This file
+├── QUICK_START.md          # Quick start guide
+└── .gitignore              # Ignores node_modules, .env, data/, etc.
 ```
 
 ## 🚀 Quick Start
@@ -121,9 +116,9 @@ JASECI_APP_FINAL/
 
 - Python 3.10+ with `jaclang` and `byllm` installed
 - Node.js 16+ with npm
-- **Gemini API Key** (optional, for AI features - get free at https://aistudio.google.com/apikey)
+- **Gemini API Key** (get free at https://aistudio.google.com/apikey)
 
-### Installation
+### Backend Setup
 
 1. **Install Python dependencies:**
 
@@ -135,59 +130,61 @@ venv\Scripts\activate
 # Linux/Mac:
 source venv/bin/activate
 
-# Install Jac and dependencies
+# Install with pinned versions
+pip install -r backend/requirements.txt
+# Or manually:
 pip install jaclang byllm python-dotenv
 ```
 
-2. **Install Node.js dependencies:**
+2. **Set up API key (optional, for AI features):**
 
-```bash
-npm install
+Create `backend/.env`:
+```
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
-3. **Set up API key (optional, for AI features):**
+**Note:** AI features are disabled by default to avoid quota issues. Quizzes will use fallback questions if AI is unavailable.
 
-Create `.env` in project root or set environment variable:
-```bash
-export GEMINI_API_KEY=your-gemini-api-key-here
-```
+3. **Start the backend server:**
 
-### Running the App
-
-**Option 1: Single Command (Recommended)**
-```bash
-npm run serve:all
-```
-
-This runs both backend (`jac serve app.jac`) and frontend (`npm run dev`) simultaneously.
-
-**Option 2: Two Separate Terminals**
-
-Terminal 1 - Backend:
 ```bash
 jac serve app.jac
 ```
 
-Terminal 2 - Frontend:
-```bash
-npm run dev
-```
-
-### Access the App
-
-- **Frontend UI**: http://localhost:5173
-- **Backend API**: http://localhost:8000/walker/{walker_name}
+This starts the backend API server on port 8000.
 
 ### Data Persistence
 
-User progress is automatically saved to session files (`*.session`).
+User progress is automatically saved to session files (`app.session` and `app.session.users.json`).
 
 **Your progress persists across server restarts!**
 
 To reset all data, delete the session files:
 ```bash
-rm -f *.session *.session.users.json
+rm -f app.session app.session.users.json
 ```
+
+### Frontend Setup
+
+1. **Install dependencies:**
+
+```bash
+npm install
+```
+
+2. **Start the frontend server:**
+
+```bash
+npm run dev
+```
+
+Or use the combined command to start both backend and frontend:
+
+```bash
+npm run serve:all
+```
+
+3. Open `http://localhost:5173` in your browser.
 
 ## 📚 Concepts Covered
 
@@ -301,13 +298,11 @@ print("Sum =", a + b);
 ## 🔄 Recent Updates
 
 - ✅ **Single File Architecture** - All backend walkers and frontend code in `app.jac`
-- ✅ **jac-client Integration** - Added lesson and concept for using jac-client npm package
-- ✅ **Quiz Fallback System** - Quizzes work even when AI quota is exceeded (uses static fallback questions)
+- ✅ **jac-client Integration** - Using `jac-client` npm package for frontend-backend communication
+- ✅ **New Lesson Added** - "jac-client Integration" lesson covering npm package usage
+- ✅ **Quiz Fallback System** - Quizzes work even when AI quota is exceeded (uses fallback questions)
 - ✅ **Improved Error Handling** - Better error messages and graceful fallbacks
-- ✅ **API Response Parsing** - Fixed to correctly parse `reports` array from jaclang responses
-- ✅ **Walker API Calls** - Removed `nd` parameter that was causing errors
-- ✅ **AI-Generated Content** - Dynamic lesson and concept content generation with Gemini AI
-- ✅ **Context-Aware Quizzes** - Quiz generation includes concept details for accurate, Jac-specific questions
+- ✅ **AI Features Optional** - AI disabled by default to avoid quota issues, with automatic fallback
 
 ## 📖 Additional Documentation
 

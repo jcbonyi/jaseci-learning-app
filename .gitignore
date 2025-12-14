@@ -41,5 +41,5 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Presentation files (not pushed to GitHub)
+# Presentation files (excluded from git)
 PRESENTATION.md
