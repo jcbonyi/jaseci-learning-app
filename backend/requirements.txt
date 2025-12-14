@@ -1,0 +1,9 @@
+# Jac Language
+jaclang==0.9.3
+
+# AI/LLM Integration
+byllm>=0.4.0
+
+# Environment & Server
+python-dotenv>=1.0.0
+
