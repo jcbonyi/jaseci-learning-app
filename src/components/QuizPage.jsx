@@ -41,6 +41,16 @@ export default function QuizPage({quiz, userId}) {
             const score = Math.round((correct / quiz.questions.length) * 100)
             const passed = score >= (quiz.passing_score || 70)
             
+            // Save to quiz history
+            if (userId && quiz.concept) {
+                saveQuizToHistory(userId, {
+                    concept: quiz.concept,
+                    score: score,
+                    questions: quiz.questions,
+                    answers: answers
+                })
+            }
+            
             setResult({
                 score: score,
                 correct: correct,

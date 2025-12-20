@@ -61,7 +61,7 @@ function AppContent() {
       });
       setApiOnline(isOnline);
       if (!isOnline) {
-        setError("Backend API is not available. Run: cd backend and python start_server.py");
+        setError("Backend API is not available. Run: jac serve app.jac");
         setLoading(false);
         return;
       }
@@ -85,7 +85,7 @@ function AppContent() {
     return __jacJsx("div", {"className": "min-h-screen bg-gray-900"}, [__jacJsx("header", {"className": "bg-gray-800 shadow-lg p-4 border-b border-gray-700"}, [__jacJsx("div", {"className": "max-w-6xl mx-auto flex justify-between items-center"}, [__jacJsx("h1", {"className": "text-xl font-bold text-white"}, ["Interactive Jac Tutor"]), __jacJsx("div", {"className": "flex items-center gap-4"}, [__jacJsx("span", {"className": "text-xs px-2 py-1 rounded bg-gray-700 text-gray-400"}, ["◌ Connecting..."])])])]), __jacJsx("main", {"className": "max-w-6xl mx-auto py-4 sm:py-6 space-y-4 sm:space-y-6 px-3 sm:px-4"}, [__jacJsx(DashboardSkeleton, {}, []), __jacJsx(LessonSkeleton, {}, [])])]);
   }
   if (error) {
-    return __jacJsx("div", {"className": "min-h-screen bg-gray-900 flex items-center justify-center p-4"}, [__jacJsx("div", {"className": "bg-gray-800 p-6 rounded-lg max-w-lg border border-red-900/50"}, [__jacJsx("div", {"className": "flex items-center gap-3 mb-4"}, [__jacJsx("span", {"className": "text-3xl"}, ["⚠️"]), __jacJsx("h2", {"className": "text-xl font-bold text-red-400"}, ["Connection Error"])]), __jacJsx("p", {"className": "text-gray-300 mb-4"}, [error]), __jacJsx("div", {"className": "text-sm text-gray-400 bg-gray-900 p-4 rounded mb-4"}, [__jacJsx("p", {"className": "mb-2 font-medium text-gray-300"}, ["To start the backend:"]), __jacJsx("code", {"className": "bg-gray-800 px-3 py-2 rounded block text-green-400 font-mono"}, ["cd backend and python start_server.py"])]), __jacJsx("button", {"onClick": () => {
+    return __jacJsx("div", {"className": "min-h-screen bg-gray-900 flex items-center justify-center p-4"}, [__jacJsx("div", {"className": "bg-gray-800 p-6 rounded-lg max-w-lg border border-red-900/50"}, [__jacJsx("div", {"className": "flex items-center gap-3 mb-4"}, [__jacJsx("span", {"className": "text-3xl"}, ["⚠️"]), __jacJsx("h2", {"className": "text-xl font-bold text-red-400"}, ["Connection Error"])]), __jacJsx("p", {"className": "text-gray-300 mb-4"}, [error]), __jacJsx("div", {"className": "text-sm text-gray-400 bg-gray-900 p-4 rounded mb-4"}, [__jacJsx("p", {"className": "mb-2 font-medium text-gray-300"}, ["To start the backend:"]), __jacJsx("code", {"className": "bg-gray-800 px-3 py-2 rounded block text-green-400 font-mono"}, ["jac serve app.jac"])]), __jacJsx("button", {"onClick": () => {
       window.location.reload();
     }, "className": "w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded font-medium transition-colors"}, ["🔄 Retry Connection"])])]);
   }

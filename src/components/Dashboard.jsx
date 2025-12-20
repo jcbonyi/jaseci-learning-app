@@ -1,8 +1,6 @@
 import React, {useEffect, useState, useRef, useCallback} from 'react'
 import ConceptCard from './ConceptCard'
 import SkillMap from './SkillMap'
-import Achievements from './Achievements'
-import ProgressManager from './ProgressManager'
 import Breadcrumb from './Breadcrumb'
 import QuizHistory, { saveQuizToHistory } from './QuizHistory'
 import Analytics from './Analytics'
@@ -771,21 +769,8 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                         <h3 className="font-semibold text-white">Your Progress</h3>
                         <div className="flex gap-2">
                             <Analytics userId={userId} dashboardData={data} />
-                            <ProgressManager 
-                                data={data} 
-                                userId={userId}
-                                onImport={async (importData) => {
-                                    // Merge imported progress
-                                    console.log('Importing progress:', importData)
-                                    // Reload dashboard to reflect any changes
-                                    await load()
-                                }}
-                            />
                         </div>
                     </div>
-
-                    {/* Achievements */}
-                    <Achievements data={data} />
 
                     {/* Skill Map */}
                     <div>
@@ -806,15 +791,43 @@ export default function Dashboard({userId, onConceptSelect, refreshKey}) {
                         <div className="text-sm text-gray-300">
                             {recs && recs.recommendations && recs.recommendations.length > 0 ? (
                                 <ul className="space-y-2">
-                                    {recs.recommendations.map((rec, i) => (
-                                        <li 
-                                            key={i} 
-                                            className="text-blue-400 hover:text-blue-300 cursor-pointer bg-gray-700 px-3 py-2 rounded hover:bg-gray-600 transition-colors"
-                                            onClick={() => selectConcept({ name: rec })}
-                                        >
-                                            📚 {rec}
-                                        </li>
-                                    ))}
+                                    {recs.recommendations.map((rec, i) => {
+                                        // rec is now a lesson title
+                                        const lessonTitle = rec;
+                                        // Find the concept associated with this lesson from the data
+                                        let conceptName = null;
+                                        if (data && data.concepts) {
+                                            // Try to find concept by matching lesson title patterns
+                                            const conceptKeys = Object.keys(data.concepts);
+                                            for (const key of conceptKeys) {
+                                                // Simple matching - if lesson title contains concept name
+                                                if (lessonTitle.toLowerCase().includes(key.toLowerCase()) || 
+                                                    key.toLowerCase().includes(lessonTitle.toLowerCase().split(' ')[0])) {
+                                                    conceptName = key;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        return (
+                                            <li 
+                                                key={i} 
+                                                className="text-blue-400 hover:text-blue-300 cursor-pointer bg-gray-700 px-3 py-2 rounded hover:bg-gray-600 transition-colors"
+                                                onClick={() => {
+                                                    // If we found a concept, select it; otherwise just show the lesson title
+                                                    if (conceptName) {
+                                                        selectConcept({ name: conceptName });
+                                                    } else if (onConceptSelect) {
+                                                        // Fallback: pass lesson title to parent
+                                                        onConceptSelect({ name: lessonTitle, type: 'lesson' });
+                                                    }
+                                                }}
+                                                title={`Click to start: ${lessonTitle}`}
+                                            >
+                                                📖 {lessonTitle}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             ) : (
                                 <span className="text-gray-500">Complete some lessons to get recommendations</span>

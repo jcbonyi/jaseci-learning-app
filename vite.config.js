@@ -47,7 +47,7 @@ export default defineConfig({
   },
   // Exclude unnecessary directories from dependency scanning
   optimizeDeps: {
-    exclude: ['backend', 'venv'],
+    exclude: ['venv'],
   },
 });
 

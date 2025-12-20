@@ -497,29 +497,77 @@ walker recommend_next {
             disengage;
         }
 
-        # Return weakest two concepts using manual sort
-        keys = list(u.concept_scores.keys());
-        scores = [];
-        for k in keys {
-            scores.append([k, u.concept_scores[k]]);
+        # Recommendation logic: return next lessons (not completed ones)
+        all_lessons = [-->(`?lesson)];
+        candidates = [];
+        completed_list = u.completed_lessons if u.completed_lessons else [];
+        
+        # Filter: unlocked AND not completed
+        for l in all_lessons {
+            is_completed = False;
+            # Check if this lesson title is in completed_list
+            for completed_title in completed_list {
+                if completed_title == l.title {
+                    is_completed = True;
+                    break;
+                }
+            }
+            # Only add if unlocked and NOT completed
+            if l.unlocked and not is_completed {
+                candidates.append(l);
+            }
         }
 
-        # Simple bubble sort by score
-        n = len(scores);
-        for i in range(n) {
-            for j in range(0, n - i - 1) {
-                if scores[j][1] > scores[j + 1][1] {
-                    temp = scores[j];
-                    scores[j] = scores[j + 1];
-                    scores[j + 1] = temp;
+        # If none unlocked, unlock first available lesson that's not completed
+        if len(candidates) == 0 {
+            for l in all_lessons {
+                is_completed = False;
+                # Check if this lesson title is in completed_list
+                for completed_title in completed_list {
+                    if completed_title == l.title {
+                        is_completed = True;
+                        break;
+                    }
+                }
+                # Unlock first lesson that's not completed
+                if not is_completed and not l.unlocked {
+                    l.unlocked = True;
+                    candidates.append(l);
+                    break;
                 }
             }
         }
 
+        # If still no candidates, return empty recommendations
+        if len(candidates) == 0 {
+            report {"recommendations": []};
+            disengage;
+        }
+
+        # Sort candidates by difficulty (easiest first)
+        sorted_lessons = [];
+        for c in candidates {
+            inserted = False;
+            c_difficulty = c.difficulty if hasattr(c, 'difficulty') else 999;
+            
+            for i in range(len(sorted_lessons)) {
+                s_difficulty = sorted_lessons[i].difficulty if hasattr(sorted_lessons[i], 'difficulty') else 999;
+                if c_difficulty < s_difficulty {
+                    sorted_lessons.insert(i, c);
+                    inserted = True;
+                    break;
+                }
+            }
+            if not inserted {
+                sorted_lessons.append(c);
+            }
+        }
+
+        # Return up to 3 lesson titles (next lessons, not completed ones)
         rec = [];
-        count = min(2, len(scores));
+        count = min(3, len(sorted_lessons));
         for i in range(count) {
-            rec.append(scores[i][0]);
+            rec.append(sorted_lessons[i].title);
         }
         report {"recommendations": rec};
     }
@@ -834,7 +882,15 @@ Return a LessonContent object with these EXACT fields:
 
 2. overview: 1-2 sentence summary of what will be learned (plain text, NO code)
 
-3. detailed_content: 2-3 paragraphs explaining the topic in depth (plain text, NO code, NO markdown)
+3. detailed_content: 5-7 detailed paragraphs explaining the topic comprehensively (plain text, NO code, NO markdown)
+   - First paragraph: Introduction and context - what is this topic and why is it important?
+   - Second paragraph: Core concepts and fundamental principles - what are the key ideas?
+   - Third paragraph: How it works - step-by-step explanation of mechanisms and processes
+   - Fourth paragraph: Practical applications and use cases - when and why would you use this?
+   - Fifth paragraph: Common patterns and best practices - how to use it effectively
+   - Sixth paragraph: Relationship to other concepts - how does this connect to other Jac features?
+   - Seventh paragraph: Summary and key takeaways - what should students remember?
+   Make it educational, thorough, and easy to understand. Use clear explanations with examples in natural language (not code).
 
 4. key_points: List of 3-5 short takeaway bullet points (plain text strings)
 

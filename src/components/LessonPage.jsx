@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import { recordLessonProgress, generateQuiz, updateMastery, getLessonDynamic } from '../api'
+import { saveQuizToHistory } from './QuizHistory'
 
 export default function LessonPage({userId, lesson, onComplete}) {
     const [completed, setCompleted] = useState(false)
@@ -112,6 +113,19 @@ export default function LessonPage({userId, lesson, onComplete}) {
         setQuizScore(score)
         setQuizSubmitted(true)
         
+        // Save to quiz history
+        if (lesson.concepts && lesson.concepts.length > 0) {
+            const conceptName = typeof lesson.concepts[0] === 'string' 
+                ? lesson.concepts[0] 
+                : lesson.concepts[0];
+            saveQuizToHistory(userId, {
+                concept: conceptName,
+                score: score,
+                questions: quizData.questions,
+                answers: quizAnswers
+            })
+        }
+        
         // Mark quiz as passed if score >= 70
         if (score >= 70) {
             setQuizPassed(true)
@@ -160,9 +174,97 @@ export default function LessonPage({userId, lesson, onComplete}) {
 
     function getDefaultDetailedContent(title) {
         const contents = {
-            "Intro to Jac syntax": "Jac is a data-spatial programming language that extends Python with graph-based computing.\n\n• Variables: Use 'let' to declare (let x = 5;)\n• Types: int, float, str, bool, list, dict\n• Control: if/elif/else, for/while loops\n• Entry: 'with entry { }' defines program start",
-            "Nodes & edges": "Nodes store data, edges connect them.\n\n• Define nodes: node Name { has field: type; }\n• Create: Name(field=value)\n• Connect: nodeA ++> nodeB\n• Traverse: [-->] gets connected nodes",
-            "Walkers deep-dive": "Walkers traverse graphs executing code at each node.\n\n• Define: walker Name { can ability { } }\n• Spawn: root spawn WalkerName()\n• Move: visit [-->] visits connected nodes\n• Access: 'here' is current node"
+            "Intro to Jac syntax": `Jac is a data-spatial programming language that extends Python with graph-based computing concepts. It introduces a unique paradigm where data and code exist as spatial objects in a graph structure, enabling powerful patterns for distributed systems and agent-based programming.
+
+The language maintains Python's familiar syntax while adding three fundamental abstractions: nodes for data storage, edges for relationships, and walkers for traversal and computation. This combination allows developers to think about programs as graphs where computation happens at specific locations.
+
+Variables in Jac are declared using the 'let' keyword, similar to JavaScript, but with Python-like type hints. The language supports standard types including integers, floats, strings, booleans, lists, and dictionaries. Control flow structures like if/elif/else conditionals and for/while loops work similarly to Python, but code blocks use curly braces instead of indentation.
+
+The 'with entry { }' block defines the program's entry point, similar to Python's 'if __name__ == "__main__":' pattern. This is where execution begins when a Jac program runs. Statements end with semicolons, providing clear statement boundaries.
+
+Jac's syntax is designed to be intuitive for Python developers while introducing graph-based concepts gradually. The language allows you to write traditional Python-like code but also leverage powerful graph operations when needed. This makes it easy to learn for those familiar with Python while opening up new programming paradigms.
+
+Understanding Jac syntax is the foundation for all other concepts. Once you grasp how variables, types, and control flow work, you can build more complex graph structures and traversal patterns. The syntax is intentionally simple to keep the focus on the powerful graph-based features that make Jac unique.
+
+In practice, Jac syntax enables you to express complex relationships and computations in a natural way. Whether you're building data pipelines, agent systems, or distributed applications, the syntax provides the building blocks while the graph structure provides the power.`,
+
+            "Nodes & edges": `Nodes and edges form the fundamental building blocks of Jac's graph-based programming model. Nodes are containers that hold data, similar to objects or structs in other languages, but with the added power of being part of a spatial graph structure.
+
+Each node type is defined using the 'node' keyword followed by a name and a block containing field declarations. Fields are declared with 'has' keyword, specifying both the field name and its type. For example, 'node Person { has name: str; has age: int; }' creates a Person node type with name and age fields.
+
+Creating node instances is straightforward - you call the node type like a function with field values: 'Person(name="Alice", age=30)'. Once created, nodes exist in the graph and can be connected to other nodes through edges.
+
+Edges represent relationships between nodes. The simplest edge is created using the '++>' operator, which creates a generic bidirectional connection. For example, 'nodeA ++> nodeB' connects nodeA to nodeB. You can also create typed edges with specific properties by defining an edge type first, then using the ':edge_type:' syntax.
+
+Accessing connected nodes is done through the arrow operator, which returns a list of all nodes connected from the current node. You can filter by node type using bracket notation with type filtering syntax, which only returns nodes of the specified type. This enables powerful graph queries and traversals.
+
+The graph structure enables spatial programming where the location of data and code matters. Nodes can have abilities (methods) that execute when walkers visit them, creating location-aware computation. This spatial aspect is what makes Jac unique - code behavior can depend on where it executes in the graph.
+
+Understanding nodes and edges is crucial because they form the foundation for all graph operations. Whether you're building social networks, knowledge graphs, or state machines, nodes and edges provide the structure. The relationships you create determine how data flows and how computation happens across the graph.`,
+
+            "Walkers deep-dive": `Walkers are mobile agents that traverse the graph and execute code at each node they visit. Think of them as autonomous programs that move through your graph structure, performing operations at each location. This is fundamentally different from traditional function calls - walkers have their own state and can make decisions about where to go next.
+
+Walkers are defined using the 'walker' keyword followed by a name and a block containing their definition. They can have parameters declared with 'has', abilities defined with 'can', and entry/exit behaviors that execute when entering or leaving nodes. For example, 'walker Explorer { has target: str; can search with NodeType entry { } }' creates a walker with a target parameter and a search ability.
+
+Spawning a walker means starting it on a specific node. The syntax 'root spawn Explorer()' starts the Explorer walker on the root node. Once spawned, the walker begins executing its entry behavior and can then move to connected nodes using the 'visit' keyword.
+
+The 'visit' statement with bracket notation tells the walker to visit all connected nodes. You can also filter which nodes to visit using bracket notation with type filtering to only visit nodes of a specific type. The walker automatically traverses the graph, executing code at each node it visits.
+
+Within a walker, 'here' refers to the current node the walker is on, while 'self' refers to the walker instance itself. This distinction is crucial - 'here' gives you access to the node's data and abilities, while 'self' gives you access to the walker's parameters and state.
+
+Walkers can use 'report' to return data from their traversal, and 'disengage' to stop the traversal early. This allows walkers to search for specific nodes, collect information, or perform operations across the entire graph structure.
+
+The power of walkers lies in their ability to combine graph traversal with computation. They can make decisions about where to go based on the data they encounter, creating dynamic and adaptive behaviors. This makes walkers ideal for tasks like searching, data collection, graph analysis, and implementing complex algorithms that need to traverse relationships.
+
+Understanding walkers is essential for leveraging Jac's full potential. They enable you to write programs that naturally work with graph structures, making complex operations like pathfinding, graph queries, and distributed computation intuitive and elegant.`,
+
+            "GraphOps & OSP patterns": `GraphOps (Graph Operations) and OSP (Object-Spatial Programming) are advanced concepts that unlock the full power of Jac's graph-based paradigm. GraphOps provides powerful query and manipulation capabilities, while OSP introduces spatial awareness where code behavior depends on location in the graph.
+
+GraphOps enables sophisticated graph queries and filtering operations. The bracket notation with type filtering syntax filters nodes by type, allowing you to find all nodes of a specific type connected to the current node. This is incredibly powerful for traversing heterogeneous graphs where different node types represent different concepts or entities.
+
+Edge traversal operations using bracket notation return all connected nodes, while bracket notation with edge type filtering filters by edge type. This allows you to follow specific relationship types in your graph, creating precise traversal patterns. You can combine these with conditions and loops to implement complex graph algorithms.
+
+OSP (Object-Spatial Programming) is Jac's unique paradigm where code and data exist as spatial objects in the graph. The 'here' keyword refers to the current node context, while 'self' refers to the walker or ability context. This spatial awareness enables location-dependent behavior - the same code can behave differently depending on where it executes.
+
+Nodes can have abilities (methods) defined with 'can' blocks that execute when walkers visit them. These abilities are spatial - they're tied to the node's location in the graph. This creates natural patterns for state machines, where nodes represent states and abilities represent state-specific behaviors.
+
+The combination of GraphOps and OSP enables powerful patterns like distributed computation, where different parts of a graph handle different aspects of a problem. You can build systems where nodes collaborate through graph traversal, each contributing their spatial knowledge and abilities.
+
+Understanding GraphOps and OSP patterns is essential for building sophisticated Jac applications. They enable you to think about computation in spatial terms, where the structure of your graph directly influences how your program behaves. This paradigm is particularly powerful for agent-based systems, distributed applications, and complex data processing pipelines.
+
+Mastering these concepts allows you to leverage Jac's unique strengths - the ability to express complex relationships and computations in a natural, graph-oriented way. Whether you're building recommendation systems, knowledge graphs, or distributed agents, GraphOps and OSP provide the tools to make your graph structure work for you.`,
+
+            "byLLM & Agents": `The byLLM decorator and AI agents represent the cutting edge of Jac programming, combining graph-based computation with artificial intelligence. byLLM enables AI-powered code generation at runtime, while agents combine walkers with LLM capabilities to create intelligent, autonomous systems.
+
+The 'by llm()' decorator is a powerful feature that allows you to delegate function implementation to a Large Language Model. When you decorate an ability with 'by llm()', the LLM generates the implementation based on the function signature, docstring, and context. This is incredibly powerful for tasks like text generation, classification, summarization, and creative content creation.
+
+To use byLLM, you simply decorate an ability with 'by llm()' and provide a clear docstring explaining what the function should do. The LLM reads the docstring, understands the context from the graph structure, and generates appropriate code. This enables rapid prototyping and allows you to leverage AI capabilities without writing complex AI integration code.
+
+AI agents in Jac combine walkers with LLM capabilities to create intelligent, autonomous graph traversers. An agent can make decisions about where to go in the graph, what data to process, and how to respond based on AI reasoning. This creates systems that can adapt and learn from the graph structure they traverse.
+
+Agents can use byLLM-decorated abilities to generate responses, analyze data, or make decisions. They combine spatial awareness (knowing where they are in the graph) with AI reasoning (understanding what to do), creating powerful hybrid systems. This is ideal for chatbots, recommendation engines, and adaptive learning systems.
+
+The power of agents lies in their ability to combine multiple Jac features. They use walkers for traversal, GraphOps for querying, OSP for spatial awareness, and byLLM for AI capabilities. This creates systems that are both structured (through the graph) and intelligent (through AI), enabling sophisticated applications.
+
+Understanding byLLM and agents opens up entirely new possibilities for Jac applications. You can build systems that generate content dynamically, adapt to user behavior, and make intelligent decisions based on graph structure. This makes Jac particularly powerful for educational systems, content generation, and adaptive applications.
+
+Mastering these concepts allows you to build the next generation of intelligent applications - systems that combine the structure and clarity of graph-based programming with the flexibility and intelligence of AI. Whether you're building tutoring systems, recommendation engines, or creative tools, byLLM and agents provide the AI capabilities you need.`,
+
+            "jac-client Integration": `jac-client is an npm package that provides essential utilities for integrating Jac backend applications with frontend JavaScript and React applications. It handles the complexity of API communication, authentication, and token management, making it easy to build full-stack applications with Jac backends.
+
+The package provides several key functions: jacSpawn for calling walkers, jacSignup and jacLogin for user authentication, jacLogout for ending sessions, and jacIsLoggedIn for checking authentication status. These functions abstract away the HTTP API details, providing a clean, promise-based interface that feels natural in JavaScript.
+
+Installing jac-client is straightforward - simply run 'npm install jac-client' in your frontend project. Once installed, you can import the functions you need: 'import { jacSpawn, jacLogin, jacSignup } from "jac-client"'. The package handles all the underlying HTTP communication, including proper headers, request formatting, and response parsing.
+
+The jacSpawn function is the core of the package - it allows you to call any walker from your frontend code. You simply provide the walker name and arguments, and jacSpawn handles the HTTP POST request, error handling, and response parsing. It automatically includes authentication tokens if the user is logged in, making authenticated API calls seamless.
+
+Authentication functions like jacSignup and jacLogin handle user registration and login, automatically storing tokens in localStorage for subsequent API calls. The jacIsLoggedIn function checks if a valid token exists, and jacLogout clears the stored token. This provides a complete authentication flow without requiring manual token management.
+
+The package also handles errors gracefully, throwing meaningful error messages that you can catch and display to users. This makes error handling in your frontend code much simpler - you don't need to parse HTTP responses or check status codes manually.
+
+Understanding jac-client is essential for building modern Jac applications with React or other JavaScript frameworks. It bridges the gap between the graph-based backend and the component-based frontend, enabling you to leverage Jac's power from familiar frontend development patterns.
+
+Mastering jac-client integration allows you to build full-stack applications that combine Jac's graph-based computation with modern frontend frameworks. Whether you're building dashboards, learning platforms, or data visualization tools, jac-client provides the connection layer that makes it all work together seamlessly.`
         }
         return contents[title] || lesson.content
     }
