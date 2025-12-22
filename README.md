@@ -1,69 +1,84 @@
 # Interactive Learning Platform for Jac / Jaseci
 
-An adaptive learning platform built with Jac backend and React frontend for teaching Jac/Jaseci programming concepts. Features **AI-powered dynamic content generation** using Google Gemini.
+An adaptive learning platform built with Jac backend and React frontend for teaching Jac/Jaseci programming concepts. Features AI-powered dynamic content generation using Google Gemini.
+
+## Project Videos
+
+[Watch the project demonstration video](https://drive.google.com/file/d/1Qa_x_hPTOGOTxSw2PdVSAKn6xDjAZpNF/view?usp=drive_link)
+
+## Overview
+
+This platform provides an interactive learning experience for Jac/Jaseci programming through AI-generated content, interactive lessons, quizzes, and a code playground. The system uses Google Gemini AI to dynamically generate educational content tailored to each concept.
 
 ## Features
 
-### AI-Powered Dynamic Content
-- **Lessons** are generated dynamically with Gemini AI (overview, detailed explanation, key points, examples)
-- **Quizzes** with 5 AI-generated multiple choice questions (Jac-specific, concept-focused)
-- **Concepts** get AI-generated overviews, detailed explanations, and code examples
-- **Detailed Explanations** - Both lessons and concept cards show AI-generated detailed explanations with "AI Generated" badges
-- Toggle between AI and static content
+### AI-Powered Dynamic Content Generation
+
+- **Dynamic Lessons**: Automatically generated lesson content with overviews, detailed explanations, key points, and code examples
+- **AI-Generated Quizzes**: Five multiple-choice questions per quiz, specifically focused on Jac programming concepts
+- **Concept Explanations**: AI-generated overviews, detailed explanations, and code examples for each concept
+- **Content Toggle**: Switch between AI-generated and static content as needed
+- **AI Badges**: Clear indicators showing which content is AI-generated
 
 ### Progress Dashboard
-- View all 7 Jac concepts with progress bars and mastery indicators
-- Click any concept card to see AI-generated explanations and examples
-- Skill map visualization showing your learning progress
+
+- View all 8 Jac concepts with progress bars and mastery indicators
+- Interactive concept cards with AI-generated explanations and examples
+- Skill map visualization showing learning progress
 - Personalized recommendations for next concepts to study
-- **Persistent notes** - Add personal notes to any concept (auto-saved!)
-- **Breadcrumb navigation** - Always know where you are
+- Persistent notes system with auto-save functionality
+- Breadcrumb navigation for easy orientation
 
 ### Interactive Lessons
-- **Tabbed interface** with Content, Examples, and Quiz sections
+
+- Tabbed interface with Content, Examples, and Quiz sections
 - AI-generated detailed explanations for each concept
 - Multiple code examples with copy-to-clipboard functionality
-- **"Try it" buttons** - Click to load code examples directly into the playground
-- Difficulty ratings shown as stars
-- **Quiz requirement** - Must pass quiz (≥70%) before completing lesson
-- Auto-advances to next lesson on completion
+- "Try it" buttons to load code examples directly into the playground
+- Difficulty ratings for each lesson
+- Quiz requirement: Must pass quiz (70% or higher) before completing lesson
+- Auto-advance to next lesson upon completion
 
-### Quizzes & Quiz Review
-- **5 AI-generated** multiple choice questions per quiz
-- **Jac-specific questions** - All questions are specifically about Jac programming language syntax and concepts
-- **Concept-focused** - Questions test understanding of the specific concept being studied (e.g., "Walkers", "Nodes & edges")
-- Instant feedback showing correct/incorrect answers
-- **Passing score: 70%** required to complete lessons
+### Quizzes and Quiz Review
+
+- Five AI-generated multiple-choice questions per quiz
+- Jac-specific questions focused on programming language syntax and concepts
+- Concept-focused questions testing understanding of specific topics
+- Instant feedback showing correct and incorrect answers
+- Passing score requirement: 70% to complete lessons
 - Score tracking with pass/fail indicators
-- Mastery automatically updated based on quiz performance
-- **Quiz History** - Review past quiz attempts and see where you went wrong
-- **Quiz Review Mode** - Analyze incorrect answers to learn from mistakes
+- Automatic mastery updates based on quiz performance
+- Quiz history to review past attempts
+- Quiz review mode to analyze incorrect answers
 
 ### Code Playground
-- **Two modes:**
-  - **Jac Code** - Run actual Jac code snippets (WSL users: run in terminal)
-  - **Walker API** - Call Jac walkers via the API (recommended)
+
+- **Two Execution Modes**:
+  - Jac Code: Run actual Jac code snippets (WSL users: run in terminal)
+  - Walker API: Call Jac walkers via the API (recommended)
 - Monaco Editor with syntax highlighting
-- **Keyboard shortcut**: `Ctrl+Enter` to run code
+- Keyboard shortcut: Ctrl+Enter to run code
 - Quick action buttons for common operations
 - AI generation buttons for dynamic content
-- **Copy to clipboard** - Share code easily
+- Copy to clipboard functionality
 
 ### User Experience
-- **Dark/Light theme toggle** - Switch between dark and light modes (persists)
-- **Mobile responsive** - Works on phones and tablets
-- **Skeleton loading states** - Smooth loading experience
-- **Persistent data** - Your progress saves automatically to SQLite
-- **API caching** - Faster load times with smart response caching (1-min TTL)
-- **Offline support** - Service Worker caches app for offline access
-- **Better error handling** - Clear error messages and API status indicator
+
+- Dark/Light theme toggle with persistent preference
+- Mobile responsive design for phones and tablets
+- Skeleton loading states for smooth user experience
+- Persistent data storage with automatic SQLite saves
+- API caching with smart response caching (1-minute TTL)
+- Offline support via Service Worker with cache-first strategy
+- Comprehensive error handling with clear messages and API status indicators
 
 ### Learning Analytics Dashboard
-- **Summary statistics** - Average scores, mastery counts, quiz attempts
-- **Progress visualization** - See breakdown by status (Mastered, Passed, In Progress, Not Started)
-- **Score distribution** - Understand your performance patterns
-- **Concept breakdown** - Detailed view of each concept's progress with scores
-- **Personalized tips** - Get suggestions based on your current progress
+
+- Summary statistics: Average scores, mastery counts, quiz attempts
+- Progress visualization: Breakdown by status (Mastered, Passed, In Progress, Not Started)
+- Score distribution analysis
+- Concept breakdown: Detailed view of each concept's progress with scores
+- Personalized tips based on current progress
 
 ## Project Structure
 
@@ -97,9 +112,9 @@ JASECI_APP_FINAL/
 
 - Python 3.10+ with `jaclang` and `byllm` installed
 - Node.js 16+ with npm
-- **Gemini API Key** (get free at https://aistudio.google.com/apikey) - Optional for AI features
+- Gemini API Key (optional, for AI features) - Get free at https://aistudio.google.com/apikey
 
-### Installation & Setup
+### Installation
 
 #### Option 1: Single Command (Recommended)
 
@@ -109,7 +124,7 @@ npm run serve:all
 
 This runs both backend and frontend servers in one terminal using `concurrently`.
 
-#### Option 2: Two Separate Terminals
+#### Option 2: Separate Terminals
 
 **Terminal 1: Backend Server**
 ```bash
@@ -168,14 +183,14 @@ npm install
 
 2. **Access the App**
 
-- **Frontend UI**: http://localhost:5173
-- **Backend API**: http://localhost:8000/walker/{walker_name}
+- Frontend UI: http://localhost:5173
+- Backend API: http://localhost:8000/walker/{walker_name}
 
 ### Data Persistence
 
 User progress is automatically saved to session files (`app.session` and `app.session.users.json`).
 
-**Your progress persists across server restarts!**
+Progress persists across server restarts.
 
 To reset all data, delete the session files:
 ```bash
@@ -202,14 +217,14 @@ The platform teaches 8 Jac/Jaseci concepts in order:
 
 | # | Concept | Description | Difficulty |
 |---|---------|-------------|------------|
-| 1 | **Jac syntax** | Language basics, variables, control flow | ⭐ |
-| 2 | **Nodes & edges** | Graph structures, creating connections | ⭐ |
-| 3 | **Walkers** | Agent traversal, visit, report | ⭐⭐ |
-| 4 | **GraphOps** | Graph operations and filtering | ⭐⭐ |
-| 5 | **OSP** | Object-Spatial Programming patterns | ⭐⭐ |
-| 6 | **byLLM** | LLM-backed decorators | ⭐⭐⭐ |
-| 7 | **AI agents** | Building intelligent agents | ⭐⭐⭐ |
-| 8 | **jac-client** | Frontend integration with npm package | ⭐⭐ |
+| 1 | **Jac syntax** | Language basics, variables, control flow | Beginner |
+| 2 | **Nodes & edges** | Graph structures, creating connections | Beginner |
+| 3 | **Walkers** | Agent traversal, visit, report | Intermediate |
+| 4 | **GraphOps** | Graph operations and filtering | Intermediate |
+| 5 | **OSP** | Object-Spatial Programming patterns | Intermediate |
+| 6 | **byLLM** | LLM-backed decorators | Advanced |
+| 7 | **AI agents** | Building intelligent agents | Advanced |
+| 8 | **jac-client** | Frontend integration with npm package | Intermediate |
 
 ## API Endpoints
 
@@ -281,7 +296,7 @@ print("Sum =", a + b);
 
 ## AI Integration with byLLM
 
-This app uses Jaseci's **`by llm()`** feature with Google Gemini to dynamically generate lesson content, quizzes, and concepts.
+This app uses Jaseci's `by llm()` feature with Google Gemini to dynamically generate lesson content, quizzes, and concepts.
 
 ### What is byLLM?
 
@@ -306,7 +321,7 @@ pip install -r requirements.txt
 2. **Get a Gemini API Key**
 
 1. Go to https://aistudio.google.com/apikey
-2. Create a new API key (it's free!)
+2. Create a new API key (free)
 3. Copy the key
 
 3. **Set Up Environment**
@@ -367,7 +382,7 @@ Generates quiz questions specifically about Jac programming language concepts. T
 - Include concept details and code examples for context
 - Generate practical, educational questions that test understanding, not memorization
 
-**Generates 5 AI-powered multiple-choice quiz questions per quiz.**
+Generates 5 AI-powered multiple-choice quiz questions per quiz.
 
 **Arguments:**
 | Name | Type | Default | Description |
@@ -424,11 +439,11 @@ glob llm = Model(model_name="openai/gpt-4o-mini");
 
 | Provider | Model | Cost |
 |----------|-------|------|
-| **Gemini** | gemini-2.0-flash | **Free** (with limits) |
+| **Gemini** | gemini-2.0-flash | Free (with limits) |
 | OpenAI | gpt-4o-mini | $0.15/1M input tokens |
 | OpenAI | gpt-4o | $5/1M input tokens |
 
-**Gemini is recommended** for this app as it's free and fast!
+Gemini is recommended for this app as it's free and fast.
 
 ## Troubleshooting
 
@@ -480,11 +495,11 @@ The Vite server automatically proxies API calls to the backend on port 8000.
 
 ### Data Persistence
 
-The backend uses **session files** for persistent storage:
+The backend uses session files for persistent storage:
 - **Session files**: `app.session` and `app.session.users.json` (auto-generated in root directory)
 - **Persists**: User progress, mastery scores, notes, completed lessons
 
-**Your progress persists across server restarts!**
+Progress persists across server restarts.
 
 To reset all data:
 ```bash
